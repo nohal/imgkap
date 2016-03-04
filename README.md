@@ -1,3 +1,9 @@
+## imgkap 1.11
+Tool to manipuate raster nautical charts in KAP format
+
+This repository is a Github clone of the original code created by M'dJ in 2011 and maintained by Pavel Kalian
+
+```
 Usage:
 imgkap [option] [inputfile] [lat0 lon0 lat1 lon1 | headerfile] [outputfile]
 
@@ -36,3 +42,4 @@ Options :
 		   MAP generate DSK and NGB colors for map scan (< 64 colors) Black -> Gray, White -> Black
 		   IMG generate DSK and NGB colors for image (photo, satellite...)
 
+```
