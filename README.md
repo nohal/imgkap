@@ -3,43 +3,57 @@ Tool to manipuate raster nautical charts in KAP format
 
 This repository is a Github clone of the original code created by M'dJ in 2011 and maintained by Pavel Kalian
 
+### Usage
 ```
-Usage:
-imgkap [option] [inputfile] [lat0 lon0 lat1 lon1 | headerfile] [outputfile]
+imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-imgkap Version 1.11 by M'dJ
+Usage of imgkap Version 1.12 by M'dJ + H.N
 
 Convert kap to img :
-	imgkap mykap.kap myimg.png : convert mykap into myimg.png
-	imgkap mykap.kap mheader.kap myimg.png : convert mykap into header myheader (only text header kap file) and myimg.png
+  >imgkap mykap.kap myimg.png
+    -convert mykap into myimg.png
+  >imgkap mykap.kap mheader.kap myimg.png
+    -convert mykap into header myheader (only text file) and myimg.png
 
 Convert img to kap : 
-	imgkap myimg.png myheaderkap.kap : convert myimg.png into myimg.kap using myheader.kap for kap informations
-	imgkap myimg.png myheaderkap.kap myresult.kap : convert myimg.png into myresult.kap using myheader.kap for kap informations
-	imgkap mykap.png lat0 lon0 lat1 lon2 myresult.kap : convert myimg.png into myresult.kap using WGS84 positioning
-	imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f : convert myimg.png into myimg.kap using WGS84 positioning and options
+  >imgkap myimg.png myheaderkap.kap
+    -convert myimg.png into myresult.kap using myheader.kap for kap informations
+  >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap
+    -convert myimg.png into myresult.kap using WGS84 positioning`
+  >imgkap mykap.png lat0 lon0 x0;y0 lat1 lon1 x1;y1 myresult.kap
+    -convert myimg.png into myresult.kap
+  >imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f
+    -convert myimg.png into myimg.kap using WGS84 positioning and options
 
 Convert kml to kap : 
-	imgkap mykml.kml : convert GroundOverlay mykml file into kap file using name and directory of image
-	imgkap mykml.kml mykap.kap: convert GroundOverlay mykml into mykap file
+  >imgkap mykml.kml
+    -convert GroundOverlay mykml file into kap file using name and dir of image
+  >imgkap mykml.kml mykap.kap
+    -convert GroundOverlay mykml into mykap file
 
 WGS84 positioning :
 	lat0 lon0 is a left,top point
 	lat1 lon1 is a right,bottom point
 	lat to be beetwen -85 and +85 degree
 	lon to be beetwen -180 and +180 degree
-	    different format are accepted : -1.22  1$B!k(B10'20.123N  -1d22.123 ...
+	    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
+	x;y can be used if lat lon is not a left, top and right, bottom point
+	    lat0 lon0 x0;y0 must be in the left, upper third of the image
+	    lat1 lon1 x1;y1 must be in the right, lower third of the image
 Options :
 	-n  : Force compatibilty all KAP software, max 127 colors
 	-f  : fix units to FATHOMS
+	-w  : no image size extension to WGS84 because image is already WGS84
 	-s name : fix souding datum
 	-t title : change name of map
 	-p color : color of map
-	    - Kap to image color : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
-		   ALL generate multipage image, use only with GIF or TIF	    - image or Kap to Kap color :  NONE|KAP|MAP|IMG
-		   NONE use colors in image file, default
-		   KAP only width KAP or header file, use RGB tag in KAP file
-		   MAP generate DSK and NGB colors for map scan (< 64 colors) Black -> Gray, White -> Black
-		   IMG generate DSK and NGB colors for image (photo, satellite...)
+	   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
+	     ALL generate multipage image, use only with GIF or TIF
+	   color (image or Kap to Kap) :  NONE|KAP|MAP|IMG
+	     NONE use colors in image file, default
+	     KAP only width KAP or header file, use RGB tag in KAP file
+	     MAP generate DSK and NGB colors for map scan
+               < 64 colors: Black -> Gray, White -> Black
+	     IMG generate DSK and NGB colors for image (photo, satellite...)
 
 ```
