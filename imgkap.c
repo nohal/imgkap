@@ -1,12 +1,12 @@
 /*
- *  This source is free writen by M'dJ at 17/05/2011
+ *  This source is free writen by M'dJ at 17/05/2011 extended by H.N 01/2016
  *  Use open source FreeImage and gnu gcc
  *  Thank to freeimage, libsb and opencpn
  *
  *	imgkap.c - Convert kap a file from/to a image file and kml to kap
  */
 
-#define VERS   "1.11"
+#define VERS   "1.12"
 
 #include <stdint.h>
 #include <math.h>
@@ -49,7 +49,7 @@ typedef union
 #define FIF_KML 1027
 
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, double lon1, int optkap,int color,char *title, int units, char *sd,char *fileout);
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *fileout);
 int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
@@ -1584,10 +1584,10 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     return result;
 }
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, double lon1,int optkap, int color, char *title,int units, char *sd,char *fileout)
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *fileout)
 {
-    uint16_t    dpi,widthout,heightout;
- 	uint32_t    widthin,heightin;
+    uint16_t    dpi,widthout,heightout,widthoutr,heightoutr;
+ 	uint32_t    widthin,heightin,widthinr,heightinr;
 	double      scale;
 	double      lx,ly,dx,dy ;
     char        datej[20];
@@ -1596,6 +1596,15 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, dou
     FIBITMAP    *bitmap;
     FREE_IMAGE_TYPE type;
     RGBQUAD     palette[256*8];
+	char		*filenameNU;
+	double		londeg = 0;
+	double		latdeg = 0;
+	double		lat0loc = lat0;
+	double		lat1loc = lat1;
+	double		lon0loc = lon0;
+	double		lon1loc = lon1;
+	double		lon1locr, lon0locr, lat1locr, lat0locr;
+	uint16_t	pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
 
 	FILE		*out;
 
@@ -1637,6 +1646,56 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, dou
 		return 2;
 	}
 
+	if (pixpos0x != -1 && pixpos0y != -1 && pixpos1x != -1 && pixpos1y != -1)
+	{
+		if (pixpos0x > widthin/3 && pixpos1x < widthin/3 && pixpos0y > heightin/3 && pixpos1y < heightin/3)
+		{
+			fprintf(stderr, "ERROR - x;y pixel position must be within the upper left third and the lower right third of the image\n");
+			FreeImage_Unload(bitmap);
+			return 2;
+		}
+		if (pixpos0x < 0 || pixpos1x >= widthin || pixpos0y < 0 || pixpos1y >= heightin)
+		{
+			fprintf(stderr, "ERROR - x;y pixel position is outside the image\n");
+			FreeImage_Unload(bitmap);
+			return 2;
+		}
+
+		// calculate degree/pixel and extend lon0,lat0 lon1,lat1 to the edges of the image
+		widthoutr = widthinr = pixpos1x +1 -pixpos0x;
+		heightoutr = heightinr = pixpos1y +1 -pixpos0y;
+
+		// calculate the lon,lat of the edges of the image
+		londeg = (lon1 - lon0) / widthinr;
+		lon0loc = lon0 - (pixpos0x * londeg);
+		lon1loc = lon1 + (widthin -1 -pixpos1x) * londeg;
+		latdeg = (lat0 - lat1) / heightinr;
+		lat0loc = lat0 + pixpos0y * latdeg;
+		lat1loc = lat1 - (heightin -1 -pixpos1y) * latdeg;
+
+	    pixpos0xr = pixpos0x; pixpos1xr = pixpos1x; pixpos0yr = pixpos0y; pixpos1yr = pixpos1y;
+	    if (optionwgs84 == 0)
+	    {
+			lx = lontox(lon1)-lontox(lon0);
+			if (lx < 0) lx = -lx;
+			ly = lattoy_WS84(lat0)-lattoy_WS84(lat1);
+			if (ly < 0) ly = -ly;
+
+			// calculate extend widthout heightout relative
+			dx = heightinr * lx / ly - widthinr;
+			dy = widthinr * ly / lx - heightinr;
+
+			if (dy < 0) widthoutr = (int)round(widthinr + dx) ;
+			heightoutr = (int)round(widthoutr * ly / lx) ;
+
+			// extend x,y of the given ref points with wgs84 correction
+			pixpos0xr = (int)round (pixpos0x * widthoutr / widthinr);
+			pixpos1xr = (int)round (pixpos1x * widthoutr / widthinr);
+			pixpos0yr = (int)round (pixpos0y * heightoutr / heightinr);
+			pixpos1yr = (int)round (pixpos1y * heightoutr / heightinr);
+	    }
+	}
+
 	out = fopen(fileout, "wb");
 	if (! out)
 	{
@@ -1658,26 +1717,31 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, dou
     }
 
     /* Header comment file outut */
-    fprintf(out,"! 2011 imgkap %s file generator by M'dJ\r\n", VERS);
+    fprintf(out,"! 2016 imgkap %s file generator by M'dJ, H.N\r\n", VERS);
     fprintf(out,"! Map generated not for navigation created at %s\r\n",datej);
 
-    /* calculate size */
+    /* calculate size for WS84 */
     dpi = 254;
-    lx = lontox(lon1)-lontox(lon0);
-    if (lx < 0) lx = -lx;
-    ly = lattoy_WS84(lat0)-lattoy_WS84(lat1);
-    if (ly < 0) ly = -ly;
+    heightout = heightin;
+    widthout = widthin;
 
-    /* calculate extend widthout heightout */
-    dx = heightin * lx / ly - widthin;
-    dy = widthin * ly / lx - heightin;
+    lx = lontox(lon1loc)-lontox(lon0loc);
+	if (lx < 0) lx = -lx;
+	ly = lattoy_WS84(lat0loc)-lattoy_WS84(lat1loc);
+	if (ly < 0) ly = -ly;
 
-    widthout = widthin ;
-    if (dy < 0) widthout = (int)round(widthin + dx) ;
-    heightout = (int)round(widthout * ly / lx) ;
+    if (optionwgs84 == 0)
+    {
+		/* calculate extend widthout heightout */
+		dx = heightin * lx / ly - widthin;
+		dy = widthin * ly / lx - heightin;
 
-    fprintf(out,"! Extend widthin %d heightin %d to widthout %d heightout %d\r\n",
-            widthin,heightin,widthout,heightout);
+		if (dy < 0) widthout = (int)round(widthin + dx) ;
+		heightout = (int)round(widthout * ly / lx) ;
+
+		fprintf(out,"! Extend widthin %d heightin %d to widthout %d heightout %d\r\n",
+				widthin,heightin,widthout,heightout);
+    }
 
     scale = (1-(widthin/lx) / (heightin/ly)) *100;
     if ((scale > 5) || (scale < -5))
@@ -1692,8 +1756,8 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, dou
 
     /* calculate resolution en size in meters */
 
-    dx = postod((lat0+lat1)/2,lon0,(lat0+lat1)/2,lon1);
-    dy = postod(lat0,lon0,lat1,lon0);
+    dx = postod((lat0loc+lat1loc)/2,lon0loc,(lat0loc+lat1loc)/2,lon1loc);
+    dy = postod(lat0loc,lon0loc,lat1loc,lon0loc);
     fprintf(out,"! Size in milles %.2f x %.2f\r\n",dx,dy) ;
 
     scale = round(dy*18520000.0*dpi/(heightout*254));
@@ -1724,35 +1788,50 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, double lat1, dou
     {
         char *s;
 
-        if (title == NULL)
+        s = fileout + strlen(fileout) -1;
+        while ((s > fileout) && (*s != '.')) s--;
+        if (s > fileout) *s = 0;
+        while ((s > fileout) && (*s != '\\') && (*s != '/')) s--;
+        if (s > fileout) s++;
+		filenameNU = s;
+        
+		if (strlen (title) == 0)
         {
-            s = fileout + strlen(fileout) -1;
-            while ((s > fileout) && (*s != '.')) s--;
-            if (s > fileout) *s = 0;
-            while ((s > fileout) && (*s != '\\') && (*s != '/')) s--;
-            if (s > fileout) s++;
-
             title = s;
         }
-
-        fprintf(out,"BSB/NA=%.70s\r\n",title);
+ 		fprintf(out,"BSB/NA=%.70s\r\n",title);
     }
 
-    fprintf(out,"    NU=UNKNOWN,RA=%d,%d,DU=%d\r\n",widthout,heightout,dpi);
-    fprintf(out,"KNP/SC=%0.f,GD=WGS 84,PR=MERCATOR,PP=%.2f\r\n", scale,0.0);
+    fprintf(out,"    NU=%s,RA=%d,%d,DU=%d\r\n",filenameNU,widthout,heightout,dpi);
+    fprintf(out,"KNP/SC=%0.f,GD=WGS84,PR=MERCATOR,PP=%.2f\r\n", scale,0.0);
     fputs("    PI=UNKNOWN,SP=UNKNOWN,SK=0.0,TA=90\r\n", out);
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
-    fprintf(out,"REF/1,%u,%u,%f,%f\r\n",0,0,lat0,lon0);
-    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0,lon1);
-    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1,lon1);
-    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1,lon0);
-    fprintf(out,"PLY/1,%f,%f\r\n",lat0,lon0);
-    fprintf(out,"PLY/2,%f,%f\r\n",lat0,lon1);
-    fprintf(out,"PLY/3,%f,%f\r\n",lat1,lon1);
-    fprintf(out,"PLY/4,%f,%f\r\n",lat1,lon0);
+    fprintf(out,"REF/1,%u,%u,%f,%f\r\n",0,0,lat0loc,lon0loc);
+	fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0loc,lon1loc);
+	fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1loc,lon1loc);
+	fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1loc,lon0loc);
 
-    fprintf(out,"DTM/%.6f,%.6f\r\n", 0.0, 0.0);
+    if (pixpos0x != -1)
+    {
+		fprintf(out,"REF/5,%u,%u,%f,%f\r\n",pixpos0xr,pixpos0yr,lat0,lon0);
+		fprintf(out,"REF/6,%u,%u,%f,%f\r\n",pixpos1xr,pixpos0yr,lat0,lon1);
+		fprintf(out,"REF/7,%u,%u,%f,%f\r\n",pixpos1xr,pixpos1yr,lat1,lon1);
+		fprintf(out,"REF/8,%u,%u,%f,%f\r\n",pixpos0xr,pixpos1yr,lat1,lon0);
+    }
+
+    fprintf(out,"PLY/1,%f,%f\r\n",lat0loc,lon0loc);
+    fprintf(out,"PLY/2,%f,%f\r\n",lat0loc,lon1loc);
+    fprintf(out,"PLY/3,%f,%f\r\n",lat1loc,lon1loc);
+    fprintf(out,"PLY/4,%f,%f\r\n",lat1loc,lon0loc);
+
+	//ToDo
+    //fprintf(out,"WPX/2...,...\r\n");
+    //fprintf(out,"WPY/2...,...\r\n");
+    //fprintf(out,"PWX/2...,...\r\n");
+    //fprintf(out,"PWY/2...,...\r\n");
+
+	fprintf(out,"DTM/%.6f,%.6f\r\n", 0.0, 0.0);
 
     result = writeimgkap(out,&bitmap,optkap,color,(Color32 *)palette,widthin,heightin,widthout,heightout);
     FreeImage_Unload(bitmap);
@@ -2095,11 +2174,18 @@ int main (int argc, char *argv[])
     char    *optionsd ;
     int     optionunits = METTERS;
     int     optionkap = NORMAL;
+    int     optionwgs84 = 0;
     int     optcolor;
     char    *optionpal ;
     char    optiontitle[256];
 	double  lat0,lon0,lat1,lon1;
     double  l;
+    int		pixpos0x = -1;
+    int		pixpos0y = -1;
+    int		pixpos1x = -1;
+    int		pixpos1y = -1;
+    int		pixposx = 0;
+    int		pixposy = 0;
 
     optionsd = (char *)"UNKNOWN" ;
     optionpal = NULL;
@@ -2124,6 +2210,11 @@ int main (int argc, char *argv[])
             if (c == 'F')
             {
                 optionunits = FATHOMS;
+                continue;
+            }
+            if (c == 'W')
+            {
+                optionwgs84 = 1;
                 continue;
             }
             if (c == 'S')
@@ -2161,36 +2252,58 @@ int main (int argc, char *argv[])
         }
         if (fileheader == NULL)
         {
-            char *s;
             /* if numeric */
-            l = strtopos(*argv,&s);
-            if (!*s)
+            // pixel position of lat,lon from command line
+			if ( sscanf(*argv, "%d;%d" , &pixposx, &pixposy) == 2 )
             {
-                if (lat0 == HUGE_VAL)
-                {
-                    lat0 = l;
-                    continue;
-                }
-                if (lon0 == HUGE_VAL)
-                {
-                    lon0 = l;
-                    continue;
-                }
-                if (lat1 == HUGE_VAL)
-                {
-                    lat1 = l;
-                    continue;
-                }
-                if (lon1 == HUGE_VAL)
-                {
-                    lon1 = l;
-                    continue;
-                }
-                result = 1;
-                break;
+            	if (pixpos0x < 0)
+            	{
+            		pixpos0x = pixposx;
+            		pixpos0y = pixposy;
+            		continue;
+            	}
+            	if (pixpos1x < 0)
+            	{
+            		pixpos1x = pixposx;
+            		pixpos1y = pixposy;
+            		continue;
+            	}
+            	result = 1;
+            	break;
             }
-            fileheader = *argv;
-            continue;
+            else
+            {
+            	char *s;
+            	// lat,lon position
+            	l = strtopos(*argv,&s);
+				if (!*s)
+				{
+					if (lat0 == HUGE_VAL)
+					{
+						lat0 = l;
+						continue;
+					}
+					if (lon0 == HUGE_VAL)
+					{
+						lon0 = l;
+						continue;
+					}
+					if (lat1 == HUGE_VAL)
+					{
+						lat1 = l;
+						continue;
+					}
+					if (lon1 == HUGE_VAL)
+					{
+						lon1 = l;
+						continue;
+					}
+					result = 1;
+					break;
+				}
+				fileheader = *argv;
+				continue;
+            }
         }
         if (!*fileout)
         {
@@ -2222,7 +2335,7 @@ int main (int argc, char *argv[])
                 typein = (int)FreeImage_GetFileType(filein,0);
                 optcolor = COLOR_NONE;
                 if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
-                result = imgtokap(typein,filein,lat0,lon0,lat1,lon1,optionkap,optcolor,optiontitle,optionunits,optionsd,fileout);
+                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,fileout);
                 break;
 
             case FIF_KAP :
@@ -2291,7 +2404,7 @@ int main (int argc, char *argv[])
                         result = 1;
                         break;
                     }
-                    result = imgtokap(typein,filein,lat0,lon0,lat1,lon1,optionkap,optcolor,optiontitle,optionunits,optionsd,fileout);
+                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,fileout);
                 break;
         }
         FreeImage_DeInitialise();
@@ -2302,38 +2415,52 @@ int main (int argc, char *argv[])
 
     if (result == 1)
 	{
-		fprintf(stderr, "ERROR - Usage:\\imgkap [option] [inputfile] [lat0 lon0 lat1 lon1 | headerfile] [outputfile]\n");
-		fprintf(stderr, "\nimgkap Version %s by M'dJ\n",VERS);
+		fprintf(stderr, "ERROR - Usage:\\imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]\n");
+		fprintf(stderr, "\nUsage of imgkap Version %s by M'dJ + H.N\n",VERS);
 		fprintf(stderr, "\nConvert kap to img :\n");
-        fprintf(stderr,  "\timgkap mykap.kap myimg.png : convert mykap into myimg.png\n" );
-        fprintf(stderr,  "\timgkap mykap.kap mheader.kap myimg.png : convert mykap into header myheader (only text header kap file) and myimg.png\n" );
+        fprintf(stderr,  "  >imgkap mykap.kap myimg.png\n" );
+        fprintf(stderr,  "    -convert mykap into myimg.png\n");
+        fprintf(stderr,  "  >imgkap mykap.kap mheader.kap myimg.png\n" );
+        fprintf(stderr,  "    -convert mykap into header myheader (only text file) and myimg.png\n" );
 		fprintf(stderr, "\nConvert img to kap : \n");
-        fprintf(stderr,  "\timgkap myimg.png myheaderkap.kap : convert myimg.png into myimg.kap using myheader.kap for kap informations\n" );
-        fprintf(stderr,  "\timgkap myimg.png myheaderkap.kap myresult.kap : convert myimg.png into myresult.kap using myheader.kap for kap informations\n" );
-        fprintf(stderr,  "\timgkap mykap.png lat0 lon0 lat1 lon2 myresult.kap : convert myimg.png into myresult.kap using WGS84 positioning\n" );
-        fprintf(stderr,  "\timgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f : convert myimg.png into myimg.kap using WGS84 positioning and options\n" );
+        fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap\n" );
+        fprintf(stderr,  "    -convert myimg.png into myresult.kap using myheader.kap for kap informations\n" );
+        fprintf(stderr,  "  >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap\n" );
+        fprintf(stderr,  "    -convert myimg.png into myresult.kap using WGS84 positioning\n" );
+        fprintf(stderr,  "  >imgkap mykap.png lat0 lon0 x0;y0 lat1 lon1 x1;y1 myresult.kap\n" );
+        fprintf(stderr,  "    -convert myimg.png into myresult.kap\n" );
+        fprintf(stderr,  "  >imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f\n" );
+        fprintf(stderr,  "    -convert myimg.png into myimg.kap using WGS84 positioning and options\n" );
 		fprintf(stderr, "\nConvert kml to kap : \n");
-        fprintf(stderr,  "\timgkap mykml.kml : convert GroundOverlay mykml file into kap file using name and directory of image\n" );
-        fprintf(stderr,  "\timgkap mykml.kml mykap.kap: convert GroundOverlay mykml into mykap file\n" );
+        fprintf(stderr,  "  >imgkap mykml.kml\n" );
+        fprintf(stderr,  "    -convert GroundOverlay mykml file into kap file using name and dir of image\n" );
+        fprintf(stderr,  "  >imgkap mykml.kml mykap.kap\n" );
+        fprintf(stderr,  "    -convert GroundOverlay mykml into mykap file\n" );
 		fprintf(stderr, "\nWGS84 positioning :\n");
 		fprintf(stderr, "\tlat0 lon0 is a left,top point\n");
 		fprintf(stderr, "\tlat1 lon1 is a right,bottom point\n");
 		fprintf(stderr, "\tlat to be beetwen -85 and +85 degree\n");
 		fprintf(stderr, "\tlon to be beetwen -180 and +180 degree\n");
-		fprintf(stderr, "\t    different format are accepted : -1.22  1°10'20.123N  -1d22.123 ...\n");
+		fprintf(stderr, "\t    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...\n");
+		fprintf(stderr, "\tx;y can be used if lat lon is not a left, top and right, bottom point\n");
+		fprintf(stderr, "\t    lat0 lon0 x0;y0 must be in the left, upper third of the image\n");
+		fprintf(stderr, "\t    lat1 lon1 x1;y1 must be in the right, lower third of the image\n");
 		fprintf(stderr, "Options :\n");
         fprintf(stderr,  "\t-n  : Force compatibilty all KAP software, max 127 colors\n" );
         fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
+        fprintf(stderr,  "\t-w  : no image size extension to WGS84 because image is already WGS84\n" );
         fprintf(stderr,  "\t-s name : fix souding datum\n" );
         fprintf(stderr,  "\t-t title : change name of map\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
-        fprintf(stderr,  "\t    - Kap to image color : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
-        fprintf(stderr,  "\t\t   ALL generate multipage image, use only with GIF or TIF" );
-        fprintf(stderr,  "\t    - image or Kap to Kap color :  NONE|KAP|MAP|IMG\n" );
-        fprintf(stderr,  "\t\t   NONE use colors in image file, default\n" );
-        fprintf(stderr,  "\t\t   KAP only width KAP or header file, use RGB tag in KAP file\n" );
-        fprintf(stderr,  "\t\t   MAP generate DSK and NGB colors for map scan (< 64 colors) Black -> Gray, White -> Black\n" );
-        fprintf(stderr,  "\t\t   IMG generate DSK and NGB colors for image (photo, satellite...)\n" );
+        fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
+        fprintf(stderr,  "\t     ALL generate multipage image, use only with GIF or TIF\n" );
+        fprintf(stderr,  "\t   color (image or Kap to Kap) :  NONE|KAP|MAP|IMG\n" );
+        fprintf(stderr,  "\t     NONE use colors in image file, default\n" );
+        fprintf(stderr,  "\t     KAP only width KAP or header file, use RGB tag in KAP file\n" );
+        fprintf(stderr,  "\t     MAP generate DSK and NGB colors for map scan\n");
+        fprintf(stderr,  "\t       < 64 colors: Black -> Gray, White -> Black\n" );
+        fprintf(stderr,  "\t     IMG generate DSK and NGB colors for image (photo, satellite...)\n" );
+
         return 1;
 	}
     if (result) fprintf(stderr,  "ERROR - imgkap return %d\n",result );
