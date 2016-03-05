@@ -1,4 +1,4 @@
-## imgkap 1.11
+## imgkap 1.13
 Tool to manipuate raster nautical charts in KAP format
 
 This repository is a Github clone of the original code created by M'dJ in 2011 and maintained by Pavel Kalian
@@ -7,7 +7,7 @@ This repository is a Github clone of the original code created by M'dJ in 2011 a
 ```
 imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-Usage of imgkap Version 1.12 by M'dJ + H.N
+Usage of imgkap Version 1.13 by M'dJ + H.N
 
 Convert kap to img :
   >imgkap mykap.kap myimg.png
@@ -19,7 +19,7 @@ Convert img to kap :
   >imgkap myimg.png myheaderkap.kap
     -convert myimg.png into myresult.kap using myheader.kap for kap informations
   >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap
-    -convert myimg.png into myresult.kap using WGS84 positioning`
+    -convert myimg.png into myresult.kap using WGS84 positioning
   >imgkap mykap.png lat0 lon0 x0;y0 lat1 lon1 x1;y1 myresult.kap
     -convert myimg.png into myresult.kap
   >imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f
@@ -34,17 +34,21 @@ Convert kml to kap :
 WGS84 positioning :
 	lat0 lon0 is a left,top point
 	lat1 lon1 is a right,bottom point
-	lat to be beetwen -85 and +85 degree
-	lon to be beetwen -180 and +180 degree
+	lat to be between -85 and +85 degree
+	lon to be between -180 and +180 degree
 	    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
 	x;y can be used if lat lon is not a left, top and right, bottom point
 	    lat0 lon0 x0;y0 must be in the left, upper third of the image
 	    lat1 lon1 x1;y1 must be in the right, lower third of the image
 Options :
-	-n  : Force compatibilty all KAP software, max 127 colors
-	-f  : fix units to FATHOMS
 	-w  : no image size extension to WGS84 because image is already WGS84
-	-s name : fix souding datum
+	-r x0f;y0f-x1f;y1f  "2 pixel points -> 4 * PLY"
+	    : define a rectangle area in the image visible from the .kap
+	-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 10 pixel points -> PLY"
+	    : define a up to 10 edges polygon visible from the .kap
+	-n  : Force compatibility all KAP software, max 127 colors
+	-f  : fix units to FATHOMS
+	-s name : fix sounding datum
 	-t title : change name of map
 	-p color : color of map
 	   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
@@ -53,7 +57,6 @@ Options :
 	     NONE use colors in image file, default
 	     KAP only width KAP or header file, use RGB tag in KAP file
 	     MAP generate DSK and NGB colors for map scan
-               < 64 colors: Black -> Gray, White -> Black
+	       < 64 colors: Black -> Gray, White -> Black
 	     IMG generate DSK and NGB colors for image (photo, satellite...)
-
 ```
