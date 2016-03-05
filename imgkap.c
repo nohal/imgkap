@@ -1,21 +1,22 @@
 /*
- *  This source is free writen by M'dJ at 17/05/2011 extended by H.N 01/2016
+ *  This source is free writen by M'dJ at 17/05/2011 extended by H.N 2016
+ *  As the original author is not available, please post patches and report issues at https://github.com/nohal/imgkap
  *  Use open source FreeImage and gnu gcc
  *  Thank to freeimage, libsb and opencpn
  *
- *	imgkap.c - Convert kap a file from/to a image file and kml to kap
+ *    imgkap.c - Convert kap a file from/to a image file and kml to kap
  */
 
-#define VERS   "1.12"
+#define VERS   "1.13"
 
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <stdlib.h>		/* for malloc() */
-#include <string.h>		/* for strncmp() */
+#include <stdlib.h>        /* for malloc() */
+#include <string.h>        /* for strncmp() */
 
-#include <time.h>       /* for date in kap */
+#include <time.h>          /* for date in kap */
 
 #include <FreeImage.h>
 
@@ -35,21 +36,21 @@ typedef union
 #define METTERS     0
 #define FATHOMS     1
 
-#define NORMAL     0
-#define OLDKAP     1
+#define NORMAL      0
+#define OLDKAP      1
 
 #define COLOR_NONE  1
 #define COLOR_IMG   2
 #define COLOR_MAP   3
 #define COLOR_KAP   4
 
-#define FIF_KAP 1024
-#define FIF_NO1 1025
-#define FIF_TXT 1026
-#define FIF_KML 1027
+#define FIF_KAP     1024
+#define FIF_NO1     1025
+#define FIF_TXT     1026
+#define FIF_KML     1027
 
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *fileout);
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout);
 int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
@@ -210,7 +211,7 @@ typedef struct shistogram
 } histogram;
 
 
-#define HistIndex2(p,l) ((((p.q.rgbRed >> l) & 0x03) << 4) | (((p.q.rgbGreen >> l) & 0x03) << 2) |	((p.q.rgbBlue >> l) & 0x03) )
+#define HistIndex2(p,l) ((((p.q.rgbRed >> l) & 0x03) << 4) | (((p.q.rgbGreen >> l) & 0x03) << 2) |    ((p.q.rgbBlue >> l) & 0x03) )
 #define HistSize(l) (l?sizeof(histogram):sizeof(helem))
 #define HistInc(h,l) (histogram *)(((char *)h)+HistSize(l))
 #define HistIndex(h,p,l) (histogram *)((char *)h+HistSize(l)*HistIndex2(p,l))
@@ -285,8 +286,8 @@ typedef struct
 {
     histogram   *h;
 
-    int32_t 	nbin;
-    int32_t 	nbout;
+    int32_t     nbin;
+    int32_t     nbout;
 
     int32_t     colorsin;
     int32_t     colorsout;
@@ -696,21 +697,21 @@ static int bsb_write_index(FILE *fp, uint16_t height, uint32_t *index)
 {
     uint8_t l;
 
-	/* Write index table */
-	while (height--)
-	{
-		/* Indices must be written as big-endian */
-        l = (*index >> 24) & 0xff;
-        fputc(l, fp);
-        l = (*index >> 16) & 0xff;
-        fputc(l, fp);
-		l = (*index >> 8) & 0xff;
-        fputc(l, fp);
-		l = *index & 0xff;
-        fputc(l, fp);
-        index++;
-	}
-	return 1;
+        /* Write index table */
+        while (height--)
+        {
+            /* Indices must be written as big-endian */
+            l = (*index >> 24) & 0xff;
+            fputc(l, fp);
+            l = (*index >> 16) & 0xff;
+            fputc(l, fp);
+            l = (*index >> 8) & 0xff;
+            fputc(l, fp);
+            l = *index & 0xff;
+            fputc(l, fp);
+            index++;
+        }
+        return 1;
 }
 
 static uint32_t *bsb_read_index(int typein,FILE *in,uint16_t height)
@@ -734,12 +735,12 @@ static uint32_t *bsb_read_index(int typein,FILE *in,uint16_t height)
 
     fseek(in,l,SEEK_SET);
 
-	/* Read index table */
-	for (i=0; i < height; i++)
-	{
+    /* Read index table */
+    for (i=0; i < height; i++)
+    {
         index[i] = ((uint32_t)fgetkapc(typein,in)<<24)+((uint32_t)fgetkapc(typein,in)<<16)+((uint32_t)fgetkapc(typein,in)<<8)+((uint32_t)fgetkapc(typein,in));
-	}
-	return index;
+    }
+    return index;
 }
 
 /* bsb compress number, not value 0 at first write */
@@ -765,37 +766,37 @@ static uint16_t bsb_compress_nb(uint8_t *p, uint16_t nb, uint8_t pixel, uint16_t
 
 int bsb_compress_row(const uint8_t *buf_in, uint8_t *buf_out, uint16_t bits_out, uint16_t line, uint16_t widthin, uint16_t widthout)
 {
-	uint16_t	ibuf,run_length ;
-	uint16_t    ipixelin,ipixelout,xout;
-	uint8_t	    last_pix;
-	uint16_t    dec, max;
+    uint16_t    ibuf,run_length ;
+    uint16_t    ipixelin,ipixelout,xout;
+    uint8_t        last_pix;
+    uint16_t    dec, max;
 
-	dec = 7-bits_out;
-	max = (1<<dec) -1;
+    dec = 7-bits_out;
+    max = (1<<dec) -1;
 
     /*      write the line number */
     ibuf = bsb_compress_nb(buf_out,line,0,0x7F);
 
- 	ipixelin = ipixelout = 0;
+    ipixelin = ipixelout = 0;
 
-	while ( ipixelin < widthin )
-	{
-		last_pix = buf_in[ipixelin];
-		ipixelin++;
-		ipixelout++;
+    while ( ipixelin < widthin )
+    {
+        last_pix = buf_in[ipixelin];
+        ipixelin++;
+        ipixelout++;
 
-		/* Count length of same pixel */
-		run_length = 0;
-		if (ipixelin == 1592)
+        /* Count length of same pixel */
+        run_length = 0;
+        if (ipixelin == 1592)
             ipixelin = 1592;
-		while ( (ipixelin < widthin) && (buf_in[ipixelin] == last_pix) )
-		{
-			ipixelin++;
-			ipixelout++;
-			run_length++;
-		}
+        while ( (ipixelin < widthin) && (buf_in[ipixelin] == last_pix) )
+        {
+            ipixelin++;
+            ipixelout++;
+            run_length++;
+        }
 
-		/* Extend, like but faster (total time/2) than xout = round((double)ipixelin*widthout/widthin); */
+        /* Extend, like but faster (total time/2) than xout = round((double)ipixelin*widthout/widthin); */
         xout = ((uint32_t)((ipixelin<<1)+1)*widthout)/((uint32_t)widthin<<1);
         if (xout > ipixelout)
         {
@@ -805,9 +806,9 @@ int bsb_compress_row(const uint8_t *buf_in, uint8_t *buf_out, uint16_t bits_out,
 
         /* write pixel*/
         ibuf += bsb_compress_nb(buf_out+ibuf,run_length,last_pix<<dec,max);
-	}
-	buf_out[ibuf++] = 0;
-	return ibuf;
+    }
+    buf_out[ibuf++] = 0;
+    return ibuf;
 }
 
 /* bsb uncompress number */
@@ -834,13 +835,13 @@ static uint16_t bsb_uncompress_nb(int typein,FILE *in, uint8_t *pixel, uint8_t d
 
 int bsb_uncompress_row(int typein, FILE *in, uint8_t *buf_out, uint16_t bits_in,uint16_t bits_out, uint16_t width)
 {
-	uint16_t    count;
-	uint8_t     pixel;
-	uint8_t     decin, maxin;
+    uint16_t    count;
+    uint8_t     pixel;
+    uint8_t     decin, maxin;
     uint16_t    xout = 0;
 
-	decin = 7-bits_in;
-	maxin = (1<<decin) - 1;
+    decin = 7-bits_in;
+    maxin = (1<<decin) - 1;
 
     /* read the line number */
     count = bsb_uncompress_nb(typein, in,&pixel,0,0x7F);
@@ -890,9 +891,9 @@ int bsb_uncompress_row(int typein, FILE *in, uint8_t *buf_out, uint16_t bits_in,
             }
             break;
     }
-	/* read last byte (0) */
-	getc(in);
-	return 0;
+    /* read last byte (0) */
+    getc(in);
+    return 0;
 }
 
 static void read_line(uint8_t *in, uint16_t bits, int width, uint8_t *colors, histogram *hist, uint8_t *out)
@@ -1031,11 +1032,11 @@ static const char *colortype[] = {"RGB","DAY","DSK","NGT","NGR","GRY","PRC","PRG
 
 int writeimgkap(FILE *out,FIBITMAP **bitmap,int optkap, int optcolors, Color32 *palette, uint16_t widthin,uint16_t heightin, uint16_t widthout, uint16_t heightout)
 {
-	uint16_t	 i,cpt,len,cur,last;
-    int          num_colors;
+    uint16_t    i,cpt,len,cur,last;
+    int         num_colors;
 
-	uint32_t    *index;
-	uint8_t		*buf_in,*buf_out;
+    uint32_t    *index;
+    uint8_t     *buf_in,*buf_out;
     int         bits_in,bits_out;
 
     uint8_t     colorskap[128];
@@ -1050,10 +1051,10 @@ int writeimgkap(FILE *out,FIBITMAP **bitmap,int optkap, int optcolors, Color32 *
 
     /* make bitmap 24, accept only 1 4 8 24 bits */
     if ((bits_in > 8) && (bits_in != 24))
-	{
+    {
         FIBITMAP *bitmap24;
 
-	    bitmap24 = FreeImage_ConvertTo24Bits(*bitmap);
+        bitmap24 = FreeImage_ConvertTo24Bits(*bitmap);
         if (bitmap24 == NULL)
         {
             fprintf(stderr,"ERROR - bitmap PPP is incorrect\n");
@@ -1092,7 +1093,7 @@ int writeimgkap(FILE *out,FIBITMAP **bitmap,int optkap, int optcolors, Color32 *
     }
 
     fputs("OST/1\r\n", out);
-	fprintf(out, "IFM/%d\r\n",bits_out);
+    fprintf(out, "IFM/%d\r\n",bits_out);
 
     /* Write RGB tags for colormap */
     for (cpt=0;cpt<8;cpt++)
@@ -1110,55 +1111,54 @@ int writeimgkap(FILE *out,FIBITMAP **bitmap,int optkap, int optcolors, Color32 *
         }
     }
 
-	fputc(0x1a, out);
-	fputc('\0', out);
-	fputc(bits_out, out);
+    fputc(0x1a, out);
+    fputc('\0', out);
+    fputc(bits_out, out);
 
 
 
-	buf_in = (uint8_t *)malloc((widthin + 4)/4*4);
-	/* max space bsb encoded line can take */
-	buf_out = (uint8_t *)malloc((widthout*2 + 8)/4*4);
-	index = (uint32_t *)malloc((heightout + 1) * sizeof(uint32_t));
-	if ((buf_in == NULL) || (buf_out == NULL) || (index == NULL))
-	{
-		fprintf(stderr,"ERROR - mem malloc\n");
-
+    buf_in = (uint8_t *)malloc((widthin + 4)/4*4);
+    /* max space bsb encoded line can take */
+    buf_out = (uint8_t *)malloc((widthout*2 + 8)/4*4);
+    index = (uint32_t *)malloc((heightout + 1) * sizeof(uint32_t));
+    if ((buf_in == NULL) || (buf_out == NULL) || (index == NULL))
+    {
+        fprintf(stderr,"ERROR - mem malloc\n");
         return 2;
- 	}
+    }
 
     last = -1;
-  	for (i = 0; i<heightout; i++)
-	{
-	    /* Extend on height */
-	    cur = round((double)i * heightin / heightout);
+    for (i = 0; i<heightout; i++)
+    {
+        /* Extend on height */
+        cur = round((double)i * heightin / heightout);
         if (cur != last)
-	    {
-	        last = cur;
+        {
+            last = cur;
             read_line(FreeImage_GetScanLine(*bitmap, heightin-cur-1), bits_in, widthin, colors, hist,buf_in);
-	    }
+        }
 
         /* Compress raster and write to BSB file */
 
         len = bsb_compress_row(buf_in, buf_out, bits_out, i, widthin,widthout);
 
-		/* Record index table */
-		index[i] = ftell(out);
+        /* Record index table */
+        index[i] = ftell(out);
 
-		/* write data*/
+        /* write data*/
         fwrite(buf_out, len, 1, out);
-	}
+    }
 
-	free(buf_in);
-	free(buf_out);
+    free(buf_in);
+    free(buf_out);
     HistFree(hist);
 
-	/* record start-of-index-table file tion in the index table */
-	index[heightout] = ftell(out);
+    /* record start-of-index-table file tion in the index table */
+    index[heightout] = ftell(out);
 
-	bsb_write_index(out, heightout+1, index);
+    bsb_write_index(out, heightout+1, index);
 
-	free(index);
+    free(index);
     return 0;
 }
 
@@ -1166,9 +1166,9 @@ int writeimgkap(FILE *out,FIBITMAP **bitmap,int optkap, int optcolors, Color32 *
 static int readkapheader(int typein,FILE *in,int typeout, FILE *out, char *date,char *title,int optcolor,int *widthout, int *heightout,  double *rx, double *ry, int *depth, RGBQUAD *palette)
 
 {
-	char    *s;
+    char    *s;
     int     result =  0;
-	char    line[1024];
+    char    line[1024];
 
     /* lit l entete kap  y compris RGB et l'écrit dans un fichier sauf RGB*/
     *widthout = *heightout = 0;
@@ -1176,22 +1176,22 @@ static int readkapheader(int typein,FILE *in,int typeout, FILE *out, char *date,
     if (palette != NULL) memset(palette,0,sizeof(RGBQUAD)*128);
 
     while (fgetkaps(line,-1024,in,typein) > 0)
-	{
-		if (line[0] == 0x1a)
-			break;
-		if ((s = strstr(line, "RA=")))
-		{
-			unsigned x0, y0;
+    {
+        if (line[0] == 0x1a)
+            break;
+        if ((s = strstr(line, "RA=")))
+        {
+            unsigned x0, y0;
 
-			/* Attempt to read old-style NOS (4 parameter) version of RA= */
-			/* then fall back to newer 2-argument version */
-			if ((sscanf(s,"RA=%d,%d,%d,%d",&x0,&y0,widthout,heightout)!=4) &&
-				(sscanf(s,"RA=%d,%d", widthout, heightout) != 2))
-			{
-				result = 1;
-				break;
-			}
-		}
+            /* Attempt to read old-style NOS (4 parameter) version of RA= */
+            /* then fall back to newer 2-argument version */
+            if ((sscanf(s,"RA=%d,%d,%d,%d",&x0,&y0,widthout,heightout)!=4) &&
+                (sscanf(s,"RA=%d,%d", widthout, heightout) != 2))
+            {
+                result = 1;
+                break;
+            }
+        }
         if (palette != NULL)
         {
             int index,r,g,b;
@@ -1219,16 +1219,18 @@ static int readkapheader(int typein,FILE *in,int typeout, FILE *out, char *date,
                 p[index].rgbGreen = g;
                 p[index].rgbBlue = b;
             }
-		}
-		if (depth != NULL) sscanf(line, "IFM/%d", depth);
+        }
+        if (depth != NULL) sscanf(line, "IFM/%d", depth);
 
-		if ( (rx != NULL) && (s = strstr(line, "DX=")) ) sscanf(s, "DX=%lf", rx);
-		if ( (ry != NULL) && (s = strstr(line, "DY=")) ) sscanf(s, "DY=%lf", ry);
+        if ( (rx != NULL) && (s = strstr(line, "DX=")) )
+            sscanf(s, "DX=%lf", rx);
+        if ( (ry != NULL) && (s = strstr(line, "DY=")) )
+            sscanf(s, "DY=%lf", ry);
 
-		if ((out != NULL) && (typeout != FIF_UNKNOWN))
-		{
-		    if (typeout != FIF_TXT)
-		    {
+        if ((out != NULL) && (typeout != FIF_UNKNOWN))
+        {
+            if (typeout != FIF_TXT)
+            {
                 if (!strncmp(line,"RGB/",4)) continue;
                 if (!strncmp(line,"DAY/",4)) continue;
                 if (!strncmp(line,"DSK/",4)) continue;
@@ -1237,7 +1239,7 @@ static int readkapheader(int typein,FILE *in,int typeout, FILE *out, char *date,
                 if (!strncmp(line,"GRY/",4)) continue;
                 if (!strncmp(line,"PRC/",4)) continue;
                 if (!strncmp(line,"PRG/",4)) continue;
-		    }
+            }
 
             if ((*line == '!') && strstr(line,"M'dJ")) continue;
             if ((*line == '!') && strstr(line,"imgkap")) continue;
@@ -1267,8 +1269,8 @@ static int readkapheader(int typein,FILE *in,int typeout, FILE *out, char *date,
                 continue;
             }
             fprintf(out,"%s\r\n",line);
-		}
-	}
+        }
+    }
     return result;
 }
 
@@ -1290,19 +1292,19 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     memset(palette,0,sizeof(palette));
 
     if (optionpal && !strcasecmp(optionpal,"ALL") && (typeout != (int)FIF_TIFF) && (typeout != (int)FIF_GIF))
-	{
-	    typeout = FIF_TIFF;
+    {
+        typeout = FIF_TIFF;
 
-		fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
-		return 2;
-	}
+        fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
+        return 2;
+    }
 
     in = fopen(filein, "rb");
-	if (in == NULL)
-	{
-		fprintf(stderr,"ERROR - Can't open KAP file %s\n",filein);
-		return 2;
-	}
+    if (in == NULL)
+    {
+        fprintf(stderr,"ERROR - Can't open KAP file %s\n",filein);
+        return 2;
+    }
     if (fileheader != NULL)
     {
         header = fopen(fileheader, "wb");
@@ -1313,7 +1315,8 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
             return 2;
         }
     }
-    if (typeheader == FIF_KAP) typeheader = FIF_TXT;
+    if (typeheader == FIF_KAP)
+        typeheader = FIF_TXT;
     result = readkapheader(typein,in,typeheader,header,NULL,NULL,COLOR_NONE,&width,&height,&rx,&ry,&bits_in,palette);
     if (header != NULL) fclose(header);
     if (result)
@@ -1338,7 +1341,7 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     index = bsb_read_index(typein,in,height);
     if (index == NULL)
     {
- 		fprintf(stderr,"ERROR - Invalid index table in %s\n",fileheader);
+        fprintf(stderr,"ERROR - Invalid index table in %s\n",fileheader);
         fclose(in);
         return 3;
     }
@@ -1440,7 +1443,7 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     int         result;
     RGBQUAD     palette[256*8];
     FIBITMAP    *bitmap = 0;
-	FILE		*out;
+    FILE        *out;
     FILE        *header;
     char        datej[20];
 
@@ -1467,13 +1470,13 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
         }
     }
 
-	out = fopen(fileout, "wb");
-	if (out == NULL)
-	{
-		fprintf(stderr,"ERROR - Can't open KAP file %s\n",fileout);
-		if (bitmap) FreeImage_Unload(bitmap);
-		return 2;
-	}
+    out = fopen(fileout, "wb");
+    if (out == NULL)
+    {
+        fprintf(stderr,"ERROR - Can't open KAP file %s\n",fileout);
+        if (bitmap) FreeImage_Unload(bitmap);
+        return 2;
+    }
 
     /* Read date */
     {
@@ -1485,14 +1488,14 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
         strftime(datej, sizeof(datej), "%d/%m/%Y",date);
     }
 
-	header = fopen(fileheader, "rb");
-	if (header == NULL)
-	{
-		fprintf(stderr,"ERROR - Can't open Header file %s\n",fileheader);
-		if (bitmap) FreeImage_Unload(bitmap);
-		fclose(out);
-		return 2;
-	}
+    header = fopen(fileheader, "rb");
+    if (header == NULL)
+    {
+        fprintf(stderr,"ERROR - Can't open Header file %s\n",fileheader);
+        if (bitmap) FreeImage_Unload(bitmap);
+        fclose(out);
+        return 2;
+    }
 
     result = 1;
     if ((typeheader == FIF_TXT) || (typeheader == FIF_KAP))
@@ -1514,8 +1517,9 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
 
     if (result)
     {
-		fprintf(stderr,"ERROR - Invalid Header type %s\n",fileheader);
-		if (bitmap) FreeImage_Unload(bitmap);
+        fprintf(stderr,"ERROR - Invalid Header type %s\n",fileheader);
+        if (bitmap)
+            FreeImage_Unload(bitmap);
         fclose(header);
         fclose(out);
         return 2;
@@ -1560,21 +1564,21 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     }
     fclose(header);
 
-	if ((widthin > widthout) || (heightin > heightout))
-	{
-		fprintf(stderr, "ERROR - Image input is greater than outpout width=%d -> %d,height=%d -> %d \n", widthin,widthout, heightin,heightout);
-		FreeImage_Unload(bitmap);
+    if ((widthin > widthout) || (heightin > heightout))
+    {
+        fprintf(stderr, "ERROR - Image input is greater than outpout width=%d -> %d,height=%d -> %d \n", widthin,widthout, heightin,heightout);
+        FreeImage_Unload(bitmap);
         fclose(out);
-		return 2;
-	}
+        return 2;
+    }
 
-	if (((widthout*10/widthin) > 11) || ((heightout*10/heightin) > 11))
-	{
-		fprintf(stderr, "ERROR - Image input is too smaller than outpout width=%d -> %d,height=%d -> %d \n", widthin,widthout, heightin,heightout);
-		FreeImage_Unload(bitmap);
+    if (((widthout*10/widthin) > 11) || ((heightout*10/heightin) > 11))
+    {
+        fprintf(stderr, "ERROR - Image input is too smaller than outpout width=%d -> %d,height=%d -> %d \n", widthin,widthout, heightin,heightout);
+        FreeImage_Unload(bitmap);
         fclose(out);
-		return 2;
-	}
+        return 2;
+    }
 
     result = writeimgkap(out,&bitmap,optkap,color,(Color32 *)palette,widthin,heightin,widthout,heightout);
 
@@ -1584,29 +1588,35 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     return result;
 }
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *fileout)
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *optframe, char *fileout)
 {
     uint16_t    dpi,widthout,heightout,widthoutr,heightoutr;
- 	uint32_t    widthin,heightin,widthinr,heightinr;
-	double      scale;
-	double      lx,ly,dx,dy ;
+    uint32_t    widthin,heightin,widthinr,heightinr;
+    double      scale;
+    double      lx,ly,dx,dy ;
     char        datej[20];
     int         result;
     const char  *sunits;
     FIBITMAP    *bitmap;
     FREE_IMAGE_TYPE type;
     RGBQUAD     palette[256*8];
-	char		*filenameNU;
-	double		londeg = 0;
-	double		latdeg = 0;
-	double		lat0loc = lat0;
-	double		lat1loc = lat1;
-	double		lon0loc = lon0;
-	double		lon1loc = lon1;
-	double		lon1locr, lon0locr, lat1locr, lat0locr;
-	uint16_t	pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
+    char        *filenameNU;
+    double      londeg = 0;
+    double      latdeg = 0;
+    double      lat0loc = lat0;
+    double      lat1loc = lat1;
+    double      lon0loc = lon0;
+    double      lon1loc = lon1;
+    double      lon1locr, lon0locr, lat1locr, lat0locr;
+    uint16_t    pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
+    int            numxf = 0;
+    int         xf[10];
+    int            yf[10];
+    int         i,ply = 0;
+    double      plylat[10];
+    double      plylon[10];
 
-	FILE		*out;
+    FILE        *out;
 
     sunits = "METERS";
     if (units != METTERS) sunits = "FATHOMS";
@@ -1623,86 +1633,157 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     /* Read image file */
     bitmap = FreeImage_Load((FREE_IMAGE_FORMAT)typein,filein,BMP_DEFAULT);
-	if (bitmap == NULL)
-	{
-		fprintf(stderr, "ERROR - Could not open or error in image file\"%s\"\n", filein);
-		return 2;
-	}
+    if (bitmap == NULL)
+    {
+        fprintf(stderr, "ERROR - Could not open or error in image file\"%s\"\n", filein);
+        return 2;
+    }
 
-	type = FreeImage_GetImageType(bitmap);
-	if (type != FIT_BITMAP)
-	{
-		fprintf(stderr, "ERROR - Image is not a bitmap file\"%s\"\n", filein);
-		FreeImage_Unload(bitmap);
-		return 2;
-	}
+    type = FreeImage_GetImageType(bitmap);
+    if (type != FIT_BITMAP)
+    {
+        fprintf(stderr, "ERROR - Image is not a bitmap file\"%s\"\n", filein);
+        FreeImage_Unload(bitmap);
+        return 2;
+    }
 
-	widthin = FreeImage_GetWidth(bitmap);
-	heightin = FreeImage_GetHeight(bitmap);
-	if (!widthin || !heightin)
-	{
-		fprintf(stderr, "ERROR - Invalid image size (width=%d,height=%d)\n", widthin, heightin);
-		FreeImage_Unload(bitmap);
-		return 2;
-	}
+    widthin = FreeImage_GetWidth(bitmap);
+    heightin = FreeImage_GetHeight(bitmap);
+    if (!widthin || !heightin)
+    {
+        fprintf(stderr, "ERROR - Invalid image size (width=%d,height=%d)\n", widthin, heightin);
+        FreeImage_Unload(bitmap);
+        return 2;
+    }
 
-	if (pixpos0x != -1 && pixpos0y != -1 && pixpos1x != -1 && pixpos1y != -1)
-	{
-		if (pixpos0x > widthin/3 && pixpos1x < widthin/3 && pixpos0y > heightin/3 && pixpos1y < heightin/3)
-		{
-			fprintf(stderr, "ERROR - x;y pixel position must be within the upper left third and the lower right third of the image\n");
-			FreeImage_Unload(bitmap);
-			return 2;
-		}
-		if (pixpos0x < 0 || pixpos1x >= widthin || pixpos0y < 0 || pixpos1y >= heightin)
-		{
-			fprintf(stderr, "ERROR - x;y pixel position is outside the image\n");
-			FreeImage_Unload(bitmap);
-			return 2;
-		}
+    if (pixpos0x != -1 && pixpos0y != -1 && pixpos1x != -1 && pixpos1y != -1)
+    {
+        if (pixpos0x > widthin/3 && pixpos1x < widthin/3 && pixpos0y > heightin/3 && pixpos1y < heightin/3)
+        {
+            fprintf(stderr, "ERROR - x;y pixel position must be within the upper left third and the lower right third of the image\n");
+            FreeImage_Unload(bitmap);
+            return 2;
+        }
+        if (pixpos0x < 0 || pixpos1x >= widthin || pixpos0y < 0 || pixpos1y >= heightin)
+        {
+            fprintf(stderr, "ERROR - x;y pixel position is outside the image\n");
+            FreeImage_Unload(bitmap);
+            return 2;
+        }
 
-		// calculate degree/pixel and extend lon0,lat0 lon1,lat1 to the edges of the image
-		widthoutr = widthinr = pixpos1x +1 -pixpos0x;
-		heightoutr = heightinr = pixpos1y +1 -pixpos0y;
+        // calculate degree/pixel and extend lon0,lat0 lon1,lat1 to the edges of the image
+        widthoutr = widthinr = pixpos1x +1 -pixpos0x;
+        heightoutr = heightinr = pixpos1y +1 -pixpos0y;
 
-		// calculate the lon,lat of the edges of the image
-		londeg = (lon1 - lon0) / widthinr;
-		lon0loc = lon0 - (pixpos0x * londeg);
-		lon1loc = lon1 + (widthin -1 -pixpos1x) * londeg;
-		latdeg = (lat0 - lat1) / heightinr;
-		lat0loc = lat0 + pixpos0y * latdeg;
-		lat1loc = lat1 - (heightin -1 -pixpos1y) * latdeg;
+        // calculate the lon,lat of the edges of the image
+        londeg = (lon1 - lon0) / widthinr;
+        lon0loc = lon0 - pixpos0x * londeg;
+        lon1loc = lon1 + (widthin -1 -pixpos1x) * londeg;
+        latdeg = (lat0 - lat1) / heightinr;
+        lat0loc = lat0 + pixpos0y * latdeg;
+        lat1loc = lat1 - (heightin -1 -pixpos1y) * latdeg;
 
-	    pixpos0xr = pixpos0x; pixpos1xr = pixpos1x; pixpos0yr = pixpos0y; pixpos1yr = pixpos1y;
-	    if (optionwgs84 == 0)
-	    {
-			lx = lontox(lon1)-lontox(lon0);
-			if (lx < 0) lx = -lx;
-			ly = lattoy_WS84(lat0)-lattoy_WS84(lat1);
-			if (ly < 0) ly = -ly;
+        pixpos0xr = pixpos0x; pixpos1xr = pixpos1x; pixpos0yr = pixpos0y; pixpos1yr = pixpos1y;
+        if (optionwgs84 == 0)
+        {
+            lx = lontox(lon1)-lontox(lon0);
+            if (lx < 0) lx = -lx;
+            ly = lattoy_WS84(lat0)-lattoy_WS84(lat1);
+            if (ly < 0) ly = -ly;
 
-			// calculate extend widthout heightout relative
-			dx = heightinr * lx / ly - widthinr;
-			dy = widthinr * ly / lx - heightinr;
+            // calculate extend widthout heightout relative
+            dx = heightinr * lx / ly - widthinr;
+            dy = widthinr * ly / lx - heightinr;
 
-			if (dy < 0) widthoutr = (int)round(widthinr + dx) ;
-			heightoutr = (int)round(widthoutr * ly / lx) ;
+            if (dy < 0) widthoutr = (int)round(widthinr + dx) ;
+            heightoutr = (int)round(widthoutr * ly / lx) ;
 
-			// extend x,y of the given ref points with wgs84 correction
-			pixpos0xr = (int)round (pixpos0x * widthoutr / widthinr);
-			pixpos1xr = (int)round (pixpos1x * widthoutr / widthinr);
-			pixpos0yr = (int)round (pixpos0y * heightoutr / heightinr);
-			pixpos1yr = (int)round (pixpos1y * heightoutr / heightinr);
-	    }
-	}
+            // extend x,y of the given ref points with wgs84 correction
+            pixpos0xr = (int)round (pixpos0x * widthoutr / widthinr);
+            pixpos1xr = (int)round (pixpos1x * widthoutr / widthinr);
+            pixpos0yr = (int)round (pixpos0y * heightoutr / heightinr);
+            pixpos1yr = (int)round (pixpos1y * heightoutr / heightinr);
+        }
+    }
 
-	out = fopen(fileout, "wb");
-	if (! out)
-	{
-		fprintf(stderr,"ERROR - Can't open KAP file %s\n",fileout);
-		FreeImage_Unload(bitmap);
-		return 2;
-	};
+    // calculate REF positions if cut off an image frame
+    if (optframe != NULL )
+    {
+        londeg = (lon1loc-lon0loc) / widthin;
+        latdeg = (lat0loc-lat1loc) / heightin;
+        numxf = sscanf (optframe, "%d;%d-%d;%d-%d;%d-%d;%d-%d;%d-%d;%d-%d;%d-%d;%d-%d;%d-%d;%d", &xf[0],&yf[0],&xf[1],&yf[1],&xf[2],&yf[2],&xf[3],&yf[3],&xf[4],&yf[4],&xf[5],&yf[5],&xf[6],&yf[6],&xf[7],&yf[7],&xf[8],&yf[8],&xf[9],&yf[9]);
+        ply = 0;
+        switch (numxf)
+        {
+        case 4 :
+            ply = 3;
+            plylon[0] = plylon[3] = lon0loc + (xf[0] * londeg);
+            plylon[1] = plylon[2] = lon1loc - (widthin -1 -xf[1]) * londeg;
+            plylat[0] = plylat[1] = lat0loc - (yf[0] * latdeg);
+            plylat[2] = plylat[3] = lat1loc + (heightin -1 -yf[1]) * latdeg;
+            break;
+        case 20 :
+            ply = 9;
+            plylon[9] = lon0loc + (xf[9] * londeg);
+            plylat[9] = lat0loc - (yf[9] * latdeg);
+        case 18 :
+            if (ply == 0) ply = 8;
+            plylon[8] = lon0loc + (xf[8] * londeg);
+            plylat[8] = lat0loc - (yf[8] * latdeg);
+        case 16 :
+            if (ply == 0) ply = 7;
+            plylon[7] = lon0loc + (xf[7] * londeg);
+            plylat[7] = lat0loc - (yf[7] * latdeg);
+        case 14 :
+            if (ply == 0) ply = 6;
+            plylon[6] = lon0loc + (xf[6] * londeg);
+            plylat[6] = lat0loc - (yf[6] * latdeg);
+        case 12 :
+            if (ply == 0) ply = 5;
+            plylon[5] = lon0loc + (xf[5] * londeg);
+            plylat[5] = lat0loc - (yf[5] * latdeg);
+        case 10 :
+            if (ply == 0) ply = 4;
+            plylon[4] = lon0loc + (xf[4] * londeg);
+            plylat[4] = lat0loc - (yf[4] * latdeg);
+        case 8 :
+            if (ply == 0) ply = 3;
+            plylon[3] = lon0loc + (xf[3] * londeg);
+            plylat[3] = lat0loc - (yf[3] * latdeg);
+        case 6 :
+            if (ply == 0) ply = 2;
+            plylon[0] = lon0loc + (xf[0] * londeg);
+            plylat[0] = lat0loc - (yf[0] * latdeg);
+            plylon[1] = lon0loc + (xf[1] * londeg);
+            plylat[1] = lat0loc - (yf[1] * latdeg);
+            plylon[2] = lon0loc + (xf[2] * londeg);
+            plylat[2] = lat0loc - (yf[2] * latdeg);
+            break;
+
+        default :
+            fprintf(stderr,"ERROR - use -r x0f;y0f-x1f;y1f to define an rectangle area in the image which is visible from the .kap\n");
+            fprintf(stderr,"      - use -r x0f;y0f-x1f;y1f-x2f;y2f ... to define a up to 10 edges polygon which is visible from the .kap\n");
+            FreeImage_Unload(bitmap);
+            fclose(out);
+            return 2;
+        }
+    }
+    else
+    {
+        ply = 3;
+        plylon[0] = plylon[3] = lon0loc;
+        plylon[1] = plylon[2] = lon1loc;
+        plylat[0] = plylat[1] = lat0loc;
+        plylat[2] = plylat[3] = lat1loc;
+    }
+
+    out = fopen(fileout, "wb");
+    if (! out)
+    {
+        fprintf(stderr,"ERROR - Can't open KAP file %s\n",fileout);
+        FreeImage_Unload(bitmap);
+        return 2;
+    };
 
     /* Header comment file outut */
 
@@ -1726,32 +1807,32 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     widthout = widthin;
 
     lx = lontox(lon1loc)-lontox(lon0loc);
-	if (lx < 0) lx = -lx;
-	ly = lattoy_WS84(lat0loc)-lattoy_WS84(lat1loc);
-	if (ly < 0) ly = -ly;
+    if (lx < 0) lx = -lx;
+    ly = lattoy_WS84(lat0loc)-lattoy_WS84(lat1loc);
+    if (ly < 0) ly = -ly;
 
     if (optionwgs84 == 0)
     {
-		/* calculate extend widthout heightout */
-		dx = heightin * lx / ly - widthin;
-		dy = widthin * ly / lx - heightin;
+        /* calculate extend widthout heightout */
+        dx = heightin * lx / ly - widthin;
+        dy = widthin * ly / lx - heightin;
 
-		if (dy < 0) widthout = (int)round(widthin + dx) ;
-		heightout = (int)round(widthout * ly / lx) ;
+        if (dy < 0) widthout = (int)round(widthin + dx) ;
+        heightout = (int)round(widthout * ly / lx) ;
 
-		fprintf(out,"! Extend widthin %d heightin %d to widthout %d heightout %d\r\n",
-				widthin,heightin,widthout,heightout);
+        fprintf(out,"! Extend widthin %d heightin %d to widthout %d heightout %d\r\n",
+                widthin,heightin,widthout,heightout);
     }
 
     scale = (1-(widthin/lx) / (heightin/ly)) *100;
     if ((scale > 5) || (scale < -5))
     {
-   		fprintf(stderr,"ERROR - size of image is not correct\n");
+           fprintf(stderr,"ERROR - size of image is not correct\n");
         fprintf(stderr,"\tExtend widthin %d heightin %d to widthout %d heightout %d\n",
             widthin,heightin,widthout,heightout);
         FreeImage_Unload(bitmap);
         fclose(out);
-		return 2;
+        return 2;
     }
 
     /* calculate resolution en size in meters */
@@ -1793,13 +1874,13 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
         if (s > fileout) *s = 0;
         while ((s > fileout) && (*s != '\\') && (*s != '/')) s--;
         if (s > fileout) s++;
-		filenameNU = s;
+        filenameNU = s;
         
-		if (strlen (title) == 0)
+        if (strlen (title) == 0)
         {
             title = s;
         }
- 		fprintf(out,"BSB/NA=%.70s\r\n",title);
+         fprintf(out,"BSB/NA=%.70s\r\n",title);
     }
 
     fprintf(out,"    NU=%s,RA=%d,%d,DU=%d\r\n",filenameNU,widthout,heightout,dpi);
@@ -1808,30 +1889,29 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
     fprintf(out,"REF/1,%u,%u,%f,%f\r\n",0,0,lat0loc,lon0loc);
-	fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0loc,lon1loc);
-	fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1loc,lon1loc);
-	fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1loc,lon0loc);
+    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0loc,lon1loc);
+    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1loc,lon1loc);
+    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1loc,lon0loc);
 
     if (pixpos0x != -1)
     {
-		fprintf(out,"REF/5,%u,%u,%f,%f\r\n",pixpos0xr,pixpos0yr,lat0,lon0);
-		fprintf(out,"REF/6,%u,%u,%f,%f\r\n",pixpos1xr,pixpos0yr,lat0,lon1);
-		fprintf(out,"REF/7,%u,%u,%f,%f\r\n",pixpos1xr,pixpos1yr,lat1,lon1);
-		fprintf(out,"REF/8,%u,%u,%f,%f\r\n",pixpos0xr,pixpos1yr,lat1,lon0);
+        fprintf(out,"REF/5,%u,%u,%f,%f\r\n",pixpos0xr,pixpos0yr,lat0,lon0);
+        fprintf(out,"REF/6,%u,%u,%f,%f\r\n",pixpos1xr,pixpos0yr,lat0,lon1);
+        fprintf(out,"REF/7,%u,%u,%f,%f\r\n",pixpos1xr,pixpos1yr,lat1,lon1);
+        fprintf(out,"REF/8,%u,%u,%f,%f\r\n",pixpos0xr,pixpos1yr,lat1,lon0);
     }
 
-    fprintf(out,"PLY/1,%f,%f\r\n",lat0loc,lon0loc);
-    fprintf(out,"PLY/2,%f,%f\r\n",lat0loc,lon1loc);
-    fprintf(out,"PLY/3,%f,%f\r\n",lat1loc,lon1loc);
-    fprintf(out,"PLY/4,%f,%f\r\n",lat1loc,lon0loc);
-
-	//ToDo
+    for (i=0; i<=ply; i++)
+    {
+        fprintf(out,"PLY/%u,%f,%f\r\n",i+1,plylat[i],plylon[i]);
+    }
+    //ToDo
     //fprintf(out,"WPX/2...,...\r\n");
     //fprintf(out,"WPY/2...,...\r\n");
     //fprintf(out,"PWX/2...,...\r\n");
     //fprintf(out,"PWY/2...,...\r\n");
 
-	fprintf(out,"DTM/%.6f,%.6f\r\n", 0.0, 0.0);
+    fprintf(out,"DTM/%.6f,%.6f\r\n", 0.0, 0.0);
 
     result = writeimgkap(out,&bitmap,optkap,color,(Color32 *)palette,widthin,heightin,widthout,heightout);
     FreeImage_Unload(bitmap);
@@ -1956,31 +2036,31 @@ static int readkml(char *filein,double *lat0, double *lon0, double *lat1, double
 {
     int         result;
     mxml        *kml,*ground,*cur;
-    FILE		*in;
+    FILE        *in;
     char        *s;
     char        buftag[1024];
 
-	in = fopen(filein, "rb");
-	if (in == NULL)
-	{
-		fprintf(stderr,"ERROR - Can't open KML file %s\n",filein);
-		return 2;
-	}
+    in = fopen(filein, "rb");
+    if (in == NULL)
+    {
+        fprintf(stderr,"ERROR - Can't open KML file %s\n",filein);
+        return 2;
+    }
 
     if (*filein)
-	{
+    {
         s = filein + strlen(filein) - 1;
-	    while ((s >= filein) && (strchr("/\\",*s) == NULL)) s--;
- 	    s[1] = 0;
-	}
+        while ((s >= filein) && (strchr("/\\",*s) == NULL)) s--;
+         s[1] = 0;
+    }
 
     kml = mxmlread(in,0,buftag);
     fclose(in);
 
     if (kml == NULL)
     {
-		fprintf(stderr,"ERROR - Not XML KML file %s\n",filein);
-		return 2;
+        fprintf(stderr,"ERROR - Not XML KML file %s\n",filein);
+        return 2;
     }
 
     ground = mxmlfindtag(kml,"kml");
@@ -2169,26 +2249,28 @@ int main (int argc, char *argv[])
     int     result = 0;
     char    filein[1024];
     char    *fileheader = NULL;
- 	char    fileout[1024];
- 	int     typein, typeheader,typeout;
+     char    fileout[1024];
+     int     typein, typeheader,typeout;
     char    *optionsd ;
+    char    *optionframe;
     int     optionunits = METTERS;
     int     optionkap = NORMAL;
     int     optionwgs84 = 0;
     int     optcolor;
     char    *optionpal ;
     char    optiontitle[256];
-	double  lat0,lon0,lat1,lon1;
+    double  lat0,lon0,lat1,lon1;
     double  l;
-    int		pixpos0x = -1;
-    int		pixpos0y = -1;
-    int		pixpos1x = -1;
-    int		pixpos1y = -1;
-    int		pixposx = 0;
-    int		pixposy = 0;
+    int        pixpos0x = -1;
+    int        pixpos0y = -1;
+    int        pixpos1x = -1;
+    int        pixpos1y = -1;
+    int        pixposx = 0;
+    int        pixposy = 0;
 
     optionsd = (char *)"UNKNOWN" ;
     optionpal = NULL;
+    optionframe = NULL;
 
     typein = typeheader = typeout = FIF_UNKNOWN;
     lat0 = lat1 = lon0 = lon1 = HUGE_VAL;
@@ -2215,6 +2297,13 @@ int main (int argc, char *argv[])
             if (c == 'W')
             {
                 optionwgs84 = 1;
+                continue;
+            }
+            if (c == 'R')
+            {
+                if (argc > 1) optionframe = argv[1];
+                argc--;
+                argv++;
                 continue;
             }
             if (c == 'S')
@@ -2254,55 +2343,55 @@ int main (int argc, char *argv[])
         {
             /* if numeric */
             // pixel position of lat,lon from command line
-			if ( sscanf(*argv, "%d;%d" , &pixposx, &pixposy) == 2 )
+            if ( sscanf(*argv, "%d;%d" , &pixposx, &pixposy) == 2 )
             {
-            	if (pixpos0x < 0)
-            	{
-            		pixpos0x = pixposx;
-            		pixpos0y = pixposy;
-            		continue;
-            	}
-            	if (pixpos1x < 0)
-            	{
-            		pixpos1x = pixposx;
-            		pixpos1y = pixposy;
-            		continue;
-            	}
-            	result = 1;
-            	break;
+                if (pixpos0x < 0)
+                {
+                    pixpos0x = pixposx;
+                    pixpos0y = pixposy;
+                    continue;
+                }
+                if (pixpos1x < 0)
+                {
+                    pixpos1x = pixposx;
+                    pixpos1y = pixposy;
+                    continue;
+                }
+                result = 1;
+                break;
             }
             else
             {
-            	char *s;
-            	// lat,lon position
-            	l = strtopos(*argv,&s);
-				if (!*s)
-				{
-					if (lat0 == HUGE_VAL)
-					{
-						lat0 = l;
-						continue;
-					}
-					if (lon0 == HUGE_VAL)
-					{
-						lon0 = l;
-						continue;
-					}
-					if (lat1 == HUGE_VAL)
-					{
-						lat1 = l;
-						continue;
-					}
-					if (lon1 == HUGE_VAL)
-					{
-						lon1 = l;
-						continue;
-					}
-					result = 1;
-					break;
-				}
-				fileheader = *argv;
-				continue;
+                char *s;
+                // lat,lon position
+                l = strtopos(*argv,&s);
+                if (!*s)
+                {
+                    if (lat0 == HUGE_VAL)
+                    {
+                        lat0 = l;
+                        continue;
+                    }
+                    if (lon0 == HUGE_VAL)
+                    {
+                        lon0 = l;
+                        continue;
+                    }
+                    if (lat1 == HUGE_VAL)
+                    {
+                        lat1 = l;
+                        continue;
+                    }
+                    if (lon1 == HUGE_VAL)
+                    {
+                        lon1 = l;
+                        continue;
+                    }
+                    result = 1;
+                    break;
+                }
+                fileheader = *argv;
+                continue;
             }
         }
         if (!*fileout)
@@ -2335,7 +2424,7 @@ int main (int argc, char *argv[])
                 typein = (int)FreeImage_GetFileType(filein,0);
                 optcolor = COLOR_NONE;
                 if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
-                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,fileout);
+                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout);
                 break;
 
             case FIF_KAP :
@@ -2404,7 +2493,7 @@ int main (int argc, char *argv[])
                         result = 1;
                         break;
                     }
-                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,fileout);
+                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout);
                 break;
         }
         FreeImage_DeInitialise();
@@ -2414,15 +2503,15 @@ int main (int argc, char *argv[])
     // sinon lire image et header ou image et position -> kap
 
     if (result == 1)
-	{
-		fprintf(stderr, "ERROR - Usage:\\imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]\n");
-		fprintf(stderr, "\nUsage of imgkap Version %s by M'dJ + H.N\n",VERS);
-		fprintf(stderr, "\nConvert kap to img :\n");
+    {
+        fprintf(stderr, "ERROR - Usage: imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]\n");
+        fprintf(stderr, "\nUsage of imgkap Version %s by M'dJ + H.N\n",VERS);
+        fprintf(stderr, "\nConvert kap to img :\n");
         fprintf(stderr,  "  >imgkap mykap.kap myimg.png\n" );
         fprintf(stderr,  "    -convert mykap into myimg.png\n");
         fprintf(stderr,  "  >imgkap mykap.kap mheader.kap myimg.png\n" );
         fprintf(stderr,  "    -convert mykap into header myheader (only text file) and myimg.png\n" );
-		fprintf(stderr, "\nConvert img to kap : \n");
+        fprintf(stderr, "\nConvert img to kap : \n");
         fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap\n" );
         fprintf(stderr,  "    -convert myimg.png into myresult.kap using myheader.kap for kap informations\n" );
         fprintf(stderr,  "  >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap\n" );
@@ -2431,25 +2520,29 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "    -convert myimg.png into myresult.kap\n" );
         fprintf(stderr,  "  >imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f\n" );
         fprintf(stderr,  "    -convert myimg.png into myimg.kap using WGS84 positioning and options\n" );
-		fprintf(stderr, "\nConvert kml to kap : \n");
+        fprintf(stderr, "\nConvert kml to kap : \n");
         fprintf(stderr,  "  >imgkap mykml.kml\n" );
         fprintf(stderr,  "    -convert GroundOverlay mykml file into kap file using name and dir of image\n" );
         fprintf(stderr,  "  >imgkap mykml.kml mykap.kap\n" );
         fprintf(stderr,  "    -convert GroundOverlay mykml into mykap file\n" );
-		fprintf(stderr, "\nWGS84 positioning :\n");
-		fprintf(stderr, "\tlat0 lon0 is a left,top point\n");
-		fprintf(stderr, "\tlat1 lon1 is a right,bottom point\n");
-		fprintf(stderr, "\tlat to be beetwen -85 and +85 degree\n");
-		fprintf(stderr, "\tlon to be beetwen -180 and +180 degree\n");
-		fprintf(stderr, "\t    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...\n");
-		fprintf(stderr, "\tx;y can be used if lat lon is not a left, top and right, bottom point\n");
-		fprintf(stderr, "\t    lat0 lon0 x0;y0 must be in the left, upper third of the image\n");
-		fprintf(stderr, "\t    lat1 lon1 x1;y1 must be in the right, lower third of the image\n");
-		fprintf(stderr, "Options :\n");
-        fprintf(stderr,  "\t-n  : Force compatibilty all KAP software, max 127 colors\n" );
-        fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
+        fprintf(stderr, "\nWGS84 positioning :\n");
+        fprintf(stderr, "\tlat0 lon0 is a left,top point\n");
+        fprintf(stderr, "\tlat1 lon1 is a right,bottom point\n");
+        fprintf(stderr, "\tlat to be between -85 and +85 degree\n");
+        fprintf(stderr, "\tlon to be between -180 and +180 degree\n");
+        fprintf(stderr, "\t    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...\n");
+        fprintf(stderr, "\tx;y can be used if lat lon is not a left, top and right, bottom point\n");
+        fprintf(stderr, "\t    lat0 lon0 x0;y0 must be in the left, upper third of the image\n");
+        fprintf(stderr, "\t    lat1 lon1 x1;y1 must be in the right, lower third of the image\n");
+        fprintf(stderr, "Options :\n");
         fprintf(stderr,  "\t-w  : no image size extension to WGS84 because image is already WGS84\n" );
-        fprintf(stderr,  "\t-s name : fix souding datum\n" );
+        fprintf(stderr,  "\t-r x0f;y0f-x1f;y1f  \"2 pixel points -> 4 * PLY\"\n");
+        fprintf(stderr,  "\t    : define a rectangle area in the image visible from the .kap\n" );
+        fprintf(stderr,  "\t-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... \"3 to 10 pixel points -> PLY\"\n");
+        fprintf(stderr,  "\t    : define a up to 10 edges polygon visible from the .kap\n" );
+        fprintf(stderr,  "\t-n  : Force compatibility all KAP software, max 127 colors\n" );
+        fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
+        fprintf(stderr,  "\t-s name : fix sounding datum\n" );
         fprintf(stderr,  "\t-t title : change name of map\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
         fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
@@ -2462,7 +2555,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t     IMG generate DSK and NGB colors for image (photo, satellite...)\n" );
 
         return 1;
-	}
+    }
     if (result) fprintf(stderr,  "ERROR - imgkap return %d\n",result );
     return result;
 }
