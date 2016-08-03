@@ -1889,9 +1889,9 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
     fprintf(out,"REF/1,%u,%u,%f,%f\r\n",0,0,lat0loc,lon0loc);
-    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0loc,lon1loc);
-    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1loc,lon1loc);
-    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1loc,lon0loc);
+    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout,0,lat0loc,lon1loc);
+    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout,heightout,lat1loc,lon1loc);
+    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout,lat1loc,lon0loc);
 
     if (pixpos0x != -1)
     {
