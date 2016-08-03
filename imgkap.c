@@ -35,6 +35,7 @@ typedef union
 
 #define METTERS     0
 #define FATHOMS     1
+#define FEET        2
 
 #define NORMAL      0
 #define OLDKAP      1
@@ -1618,8 +1619,12 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     FILE        *out;
 
-    sunits = "METERS";
-    if (units != METTERS) sunits = "FATHOMS";
+    switch(units) {
+    case METTERS: sunits = "METERS";  break;
+    case FATHOMS: sunits = "FATHOMS"; break;
+    case FEET:    sunits = "FEET";    break;
+    default: fprintf(stderr, "ERROR - invalid units"); exit(1);
+    }
 
     /* get latitude and longitude  */
 
@@ -1843,13 +1848,16 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     scale = round(dy*18520000.0*dpi/(heightout*254));
 
-    if (units == METTERS)
-    {
+    switch(units) {
+    case METTERS:
         dx = dx*1852.0/(double)widthout;
         dy = dy*1852.0/(double)heightout;
-    }
-    else
-    {
+        break;
+    case FEET:
+        dx *= 6;
+        dy *= 6;
+        // fallthrough
+    case FATHOMS:
         dx = dx*1157500./((double)widthout*1143.);
         dy = dy*1157500./((double)heightout*1143.);
     }
@@ -2294,6 +2302,11 @@ int main (int argc, char *argv[])
                 optionunits = FATHOMS;
                 continue;
             }
+            if (c == 'E')
+            {
+                optionunits = FEET;
+                continue;
+            }
             if (c == 'W')
             {
                 optionwgs84 = 1;
@@ -2542,6 +2555,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t    : define a up to 10 edges polygon visible from the .kap\n" );
         fprintf(stderr,  "\t-n  : Force compatibility all KAP software, max 127 colors\n" );
         fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
+        fprintf(stderr,  "\t-e  : fix units to FEET\n" );        
         fprintf(stderr,  "\t-s name : fix sounding datum\n" );
         fprintf(stderr,  "\t-t title : change name of map\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
