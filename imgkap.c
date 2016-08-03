@@ -2158,7 +2158,7 @@ static int readkml(char *filein,double *lat0, double *lon0, double *lat1, double
 
 #ifndef LIBIMGKAP
 
-inline double mystrtod(char *s, char **end)
+double mystrtod(char *s, char **end)
 {
     double d = 0, r = 1;
 
