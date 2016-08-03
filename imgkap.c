@@ -2556,7 +2556,7 @@ int main (int argc, char *argv[])
 
         return 1;
     }
-    if (result) fprintf(stderr,  "ERROR - imgkap return %d\n",result );
+    if (result) fprintf(stderr,  "ERROR - imgkap (%s) return %d\n", argv[1], result );
     return result;
 }
 
