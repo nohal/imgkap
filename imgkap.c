@@ -35,6 +35,7 @@ typedef union
 
 #define METTERS     0
 #define FATHOMS     1
+#define FEET        2
 
 #define NORMAL      0
 #define OLDKAP      1
@@ -1618,8 +1619,12 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     FILE        *out;
 
-    sunits = "METERS";
-    if (units != METTERS) sunits = "FATHOMS";
+    switch(units) {
+    case METTERS: sunits = "METERS";  break;
+    case FATHOMS: sunits = "FATHOMS"; break;
+    case FEET:    sunits = "FEET";    break;
+    default: fprintf(stderr, "ERROR - invalid units"); exit(1);
+    }
 
     /* get latitude and longitude  */
 
@@ -1843,13 +1848,16 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     scale = round(dy*18520000.0*dpi/(heightout*254));
 
-    if (units == METTERS)
-    {
+    switch(units) {
+    case METTERS:
         dx = dx*1852.0/(double)widthout;
         dy = dy*1852.0/(double)heightout;
-    }
-    else
-    {
+        break;
+    case FEET:
+        dx *= 6;
+        dy *= 6;
+        // fallthrough
+    case FATHOMS:
         dx = dx*1157500./((double)widthout*1143.);
         dy = dy*1157500./((double)heightout*1143.);
     }
@@ -1889,9 +1897,9 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
     fprintf(out,"REF/1,%u,%u,%f,%f\r\n",0,0,lat0loc,lon0loc);
-    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout-1,0,lat0loc,lon1loc);
-    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout-1,heightout-1,lat1loc,lon1loc);
-    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout-1,lat1loc,lon0loc);
+    fprintf(out,"REF/2,%u,%u,%f,%f\r\n",widthout,0,lat0loc,lon1loc);
+    fprintf(out,"REF/3,%u,%u,%f,%f\r\n",widthout,heightout,lat1loc,lon1loc);
+    fprintf(out,"REF/4,%u,%u,%f,%f\r\n",0,heightout,lat1loc,lon0loc);
 
     if (pixpos0x != -1)
     {
@@ -2158,7 +2166,7 @@ static int readkml(char *filein,double *lat0, double *lon0, double *lat1, double
 
 #ifndef LIBIMGKAP
 
-inline double mystrtod(char *s, char **end)
+double mystrtod(char *s, char **end)
 {
     double d = 0, r = 1;
 
@@ -2292,6 +2300,11 @@ int main (int argc, char *argv[])
             if (c == 'F')
             {
                 optionunits = FATHOMS;
+                continue;
+            }
+            if (c == 'E')
+            {
+                optionunits = FEET;
                 continue;
             }
             if (c == 'W')
@@ -2542,6 +2555,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t    : define a up to 10 edges polygon visible from the .kap\n" );
         fprintf(stderr,  "\t-n  : Force compatibility all KAP software, max 127 colors\n" );
         fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
+        fprintf(stderr,  "\t-e  : fix units to FEET\n" );        
         fprintf(stderr,  "\t-s name : fix sounding datum\n" );
         fprintf(stderr,  "\t-t title : change name of map\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
@@ -2556,7 +2570,7 @@ int main (int argc, char *argv[])
 
         return 1;
     }
-    if (result) fprintf(stderr,  "ERROR - imgkap return %d\n",result );
+    if (result) fprintf(stderr,  "ERROR - imgkap (%s) return %d\n", argv[1], result );
     return result;
 }
 
