@@ -2525,7 +2525,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "  >imgkap mykap.kap mheader.kap myimg.png\n" );
         fprintf(stderr,  "    -convert mykap into header myheader (only text file) and myimg.png\n" );
         fprintf(stderr, "\nConvert img to kap : \n");
-        fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap\n" );
+        fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap myresult.kap\n" );
         fprintf(stderr,  "    -convert myimg.png into myresult.kap using myheader.kap for kap informations\n" );
         fprintf(stderr,  "  >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap\n" );
         fprintf(stderr,  "    -convert myimg.png into myresult.kap using WGS84 positioning\n" );

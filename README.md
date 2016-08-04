@@ -18,7 +18,7 @@ Convert kap to img :
     -convert mykap into header myheader (only text file) and myimg.png
 
 Convert img to kap : 
-  >imgkap myimg.png myheaderkap.kap
+  >imgkap myimg.png myheaderkap.kap myresult.kap
     -convert myimg.png into myresult.kap using myheader.kap for kap informations
   >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap
     -convert myimg.png into myresult.kap using WGS84 positioning
