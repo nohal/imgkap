@@ -1604,11 +1604,16 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     char        *filenameNU;
     double      londeg = 0;
     double      latdeg = 0;
+
+    if(lon0 >= 180) {
+        lon0 -= 360;
+        lon1 -= 360;
+    }
+    
     double      lat0loc = lat0;
     double      lat1loc = lat1;
     double      lon0loc = lon0;
     double      lon1loc = lon1;
-    double      lon1locr, lon0locr, lat1locr, lat0locr;
     uint16_t    pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
     int            numxf = 0;
     int         xf[10];
@@ -1631,7 +1636,7 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     if (abs((int)lat0) > 85) return 1;
     if (abs((int)lon0) > 180) return 1;
     if (abs((int)lat1) > 85) return 1;
-    if (abs((int)lon1) > 180) return 1;
+    if (abs((int)lon1) > 360) return 1;
 
 
     memset(palette,0,sizeof(palette));
