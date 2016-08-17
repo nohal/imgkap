@@ -1290,16 +1290,6 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     uint8_t *line = NULL;
     uint32_t *index;
 
-    memset(palette,0,sizeof(palette));
-
-    if (optionpal && !strcasecmp(optionpal,"ALL") && (typeout != (int)FIF_TIFF) && (typeout != (int)FIF_GIF))
-    {
-        typeout = FIF_TIFF;
-
-        fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
-        return 2;
-    }
-
     in = fopen(filein, "rb");
     if (in == NULL)
     {
@@ -1348,6 +1338,16 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     }
 
     /* Create bitmap */
+    memset(palette,0,sizeof(palette));
+
+    if (optionpal && !strcasecmp(optionpal,"ALL") && (typeout != (int)FIF_TIFF) && (typeout != (int)FIF_GIF))
+    {
+        typeout = FIF_TIFF;
+
+        fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
+        return 2;
+    }
+
 
     bitmap = FreeImage_AllocateEx(width, height, bits_out,palette,FI_COLOR_IS_RGB_COLOR,palette,0,0,0);
     bitmappal = FreeImage_GetPalette(bitmap);
@@ -1604,11 +1604,16 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     char        *filenameNU;
     double      londeg = 0;
     double      latdeg = 0;
+
+    if(lon0 >= 180) {
+        lon0 -= 360;
+        lon1 -= 360;
+    }
+    
     double      lat0loc = lat0;
     double      lat1loc = lat1;
     double      lon0loc = lon0;
     double      lon1loc = lon1;
-    double      lon1locr, lon0locr, lat1locr, lat0locr;
     uint16_t    pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
     int            numxf = 0;
     int         xf[10];
@@ -1631,7 +1636,7 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     if (abs((int)lat0) > 85) return 1;
     if (abs((int)lon0) > 180) return 1;
     if (abs((int)lat1) > 85) return 1;
-    if (abs((int)lon1) > 180) return 1;
+    if (abs((int)lon1) > 360) return 1;
 
 
     memset(palette,0,sizeof(palette));
@@ -2419,10 +2424,11 @@ int main (int argc, char *argv[])
 
     if (!result)
     {
-        FreeImage_Initialise(0);
-
         typein = findfiletype(filein);
-        if (typein == FIF_UNKNOWN) typein = (int)FreeImage_GetFileType(filein,0);
+        if (typein == FIF_UNKNOWN) {
+            FreeImage_Initialise(0);
+            typein = (int)FreeImage_GetFileType(filein,0);
+        }
 
         switch (typein)
         {
@@ -2469,7 +2475,7 @@ int main (int argc, char *argv[])
                         break;
                     }
                 }
-                if (!*fileout && (typeheader == FIF_KAP))
+                if (!*fileout && (typeheader == FIF_KAP) && 0)
                 {
                     optcolor = COLOR_KAP;
                     if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
@@ -2498,7 +2504,7 @@ int main (int argc, char *argv[])
                     if (fileheader != NULL)
                     {
                         typeheader = findfiletype(fileheader);
-                        result = imgheadertokap(typein,filein,typeheader,optionkap,optcolor,optiontitle,fileheader,fileout);
+                        result = kaptoimg(typein,filein,typeheader,fileheader,typeout,fileout,optionpal);
                         break;
                     }
                     if (lon1 == HUGE_VAL)
@@ -2525,7 +2531,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "  >imgkap mykap.kap mheader.kap myimg.png\n" );
         fprintf(stderr,  "    -convert mykap into header myheader (only text file) and myimg.png\n" );
         fprintf(stderr, "\nConvert img to kap : \n");
-        fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap\n" );
+        fprintf(stderr,  "  >imgkap myimg.png myheaderkap.kap myresult.kap\n" );
         fprintf(stderr,  "    -convert myimg.png into myresult.kap using myheader.kap for kap informations\n" );
         fprintf(stderr,  "  >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap\n" );
         fprintf(stderr,  "    -convert myimg.png into myresult.kap using WGS84 positioning\n" );
