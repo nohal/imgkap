@@ -1290,16 +1290,6 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     uint8_t *line = NULL;
     uint32_t *index;
 
-    memset(palette,0,sizeof(palette));
-
-    if (optionpal && !strcasecmp(optionpal,"ALL") && (typeout != (int)FIF_TIFF) && (typeout != (int)FIF_GIF))
-    {
-        typeout = FIF_TIFF;
-
-        fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
-        return 2;
-    }
-
     in = fopen(filein, "rb");
     if (in == NULL)
     {
@@ -1348,6 +1338,16 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
     }
 
     /* Create bitmap */
+    memset(palette,0,sizeof(palette));
+
+    if (optionpal && !strcasecmp(optionpal,"ALL") && (typeout != (int)FIF_TIFF) && (typeout != (int)FIF_GIF))
+    {
+        typeout = FIF_TIFF;
+
+        fprintf(stderr,"ERROR - Palette ALL accepted with only TIF or GIF %s\n",fileout);
+        return 2;
+    }
+
 
     bitmap = FreeImage_AllocateEx(width, height, bits_out,palette,FI_COLOR_IS_RGB_COLOR,palette,0,0,0);
     bitmappal = FreeImage_GetPalette(bitmap);
@@ -2424,10 +2424,11 @@ int main (int argc, char *argv[])
 
     if (!result)
     {
-        FreeImage_Initialise(0);
-
         typein = findfiletype(filein);
-        if (typein == FIF_UNKNOWN) typein = (int)FreeImage_GetFileType(filein,0);
+        if (typein == FIF_UNKNOWN) {
+            FreeImage_Initialise(0);
+            typein = (int)FreeImage_GetFileType(filein,0);
+        }
 
         switch (typein)
         {
@@ -2474,7 +2475,7 @@ int main (int argc, char *argv[])
                         break;
                     }
                 }
-                if (!*fileout && (typeheader == FIF_KAP))
+                if (!*fileout && (typeheader == FIF_KAP) && 0)
                 {
                     optcolor = COLOR_KAP;
                     if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
@@ -2503,7 +2504,7 @@ int main (int argc, char *argv[])
                     if (fileheader != NULL)
                     {
                         typeheader = findfiletype(fileheader);
-                        result = imgheadertokap(typein,filein,typeheader,optionkap,optcolor,optiontitle,fileheader,fileout);
+                        result = kaptoimg(typein,filein,typeheader,fileheader,typeout,fileout,optionpal);
                         break;
                     }
                     if (lon1 == HUGE_VAL)
