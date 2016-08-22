@@ -512,7 +512,10 @@ static int HistGetPalette(uint8_t *colorskap,uint8_t *colors,Color32 *palette,hi
 
     /* get colors used */
     if ((i= _HistGetList(h,e,nbcolors,6)) != nbcolors)
+    {
+        fprintf(stderr, "Can't process the palette, reduce it before using imgkap.\n");
         return 0;
+    }
 
     /* load all color in final palette */
     memset(numpal,0,sizeof(numpal));
