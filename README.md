@@ -34,20 +34,20 @@ Convert kml to kap :
     -convert GroundOverlay mykml into mykap file
 
 WGS84 positioning :
-	lat0 lon0 is a left,top point
-	lat1 lon1 is a right,bottom point
+	lat0 lon0 is a left or right,top point
+	lat1 lon1 is a right or left,bottom point cater-cornered to lat0 lon0
 	lat to be between -85 and +85 degree
 	lon to be between -180 and +180 degree
 	    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
 	x;y can be used if lat lon is not a left, top and right, bottom point
-	    lat0 lon0 x0;y0 must be in the left, upper third of the image
-	    lat1 lon1 x1;y1 must be in the right, lower third of the image
+	    lat0 lon0 x0;y0 must be in the left or right, upper third
+	    lat1 lon1 x1;y1 must be in the right or left, lower third
 Options :
 	-w  : no image size extension to WGS84 because image is already WGS84
 	-r x0f;y0f-x1f;y1f  "2 pixel points -> 4 * PLY"
 	    : define a rectangle area in the image visible from the .kap
-	-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 10 pixel points -> PLY"
-	    : define a up to 10 edges polygon visible from the .kap
+	-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 12 pixel points -> PLY"
+	    : define a up to 12 edges polygon visible from the .kap
 	-n  : Force compatibility all KAP software, max 127 colors
 	-f  : fix units to FATHOMS
 	-s name : fix sounding datum
