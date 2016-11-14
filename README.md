@@ -1,4 +1,4 @@
-## imgkap 1.13
+## imgkap 1.14
 Tool to manipuate raster nautical charts in KAP format
 
 [![Build Status](https://travis-ci.org/nohal/imgkap.svg?branch=master)](https://travis-ci.org/nohal/imgkap)
@@ -9,7 +9,7 @@ This repository is a Github clone of the original code created by M'dJ in 2011 a
 ```
 imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-Usage of imgkap Version 1.13 by M'dJ + H.N
+Usage of imgkap Version 1.14 by M'dJ + H.N
 
 Convert kap to img :
   >imgkap mykap.kap myimg.png
