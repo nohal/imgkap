@@ -13,7 +13,7 @@ clean:
 	fi
 
 test: imgkap
-	./imgkap examples/PWAE10.gif 45 -95 "139;250" 25 -45 "1532;938" natl.kap
+	./imgkap -w examples/image.png "52°20'" "3°40'" "1871;146" "51°40'" "1°10'" "50;934" -r "500;96-1918;96-1918;968-142;968-142;541" natl.kap
 	if [ -f natl.kap ]; then \
 	echo "imgkap seems working correctly."; \
 	else \
