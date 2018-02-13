@@ -7,7 +7,7 @@
  *    imgkap.c - Convert kap a file from/to a image file and kml to kap
  */
 
-#define VERS   "1.14"
+#define VERS   "1.15"
 
 #include <stdint.h>
 #include <math.h>
@@ -51,7 +51,7 @@ typedef union
 #define FIF_KML     1027
 
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout);
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr);
 int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
@@ -1592,7 +1592,7 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     return result;
 }
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *optframe, char *fileout)
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *optframe, char *fileout, char *gd, char *pr)
 {
     uint16_t    dpi,widthout,heightout,widthoutr,heightoutr;
     uint32_t    widthin,heightin,widthinr,heightinr;
@@ -1902,7 +1902,7 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     }
 
     fprintf(out,"    NU=%s,RA=%d,%d,DU=%d\r\n",filenameNU,widthout,heightout,dpi);
-    fprintf(out,"KNP/SC=%0.f,GD=WGS84,PR=MERCATOR,PP=%.2f\r\n", scale,0.0);
+    fprintf(out,"KNP/SC=%0.f,GD=%s,PR=%s,PP=%.2f\r\n", scale, gd, pr,0.0);
     fputs("    PI=UNKNOWN,SP=UNKNOWN,SK=0.0,TA=90\r\n", out);
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
@@ -2285,10 +2285,14 @@ int main (int argc, char *argv[])
     int        pixpos1y = -1;
     int        pixposx = 0;
     int        pixposy = 0;
+    char       optiongd[256];
+    char       optionpr[256];
 
     optionsd = (char *)"UNKNOWN" ;
     optionpal = NULL;
     optionframe = NULL;
+    strcpy(optiongd, "WGS84");
+    strcpy(optionpr, "MERCATOR");
 
     typein = typeheader = typeout = FIF_UNKNOWN;
     lat0 = lat1 = lon0 = lon1 = HUGE_VAL;
@@ -2347,6 +2351,20 @@ int main (int argc, char *argv[])
             {
                 if (argc > 1) optionpal = argv[1];
 
+                argc--;
+                argv++;
+                continue;
+            }
+            if (c == 'D')
+            {
+                if (argc > 1) strcpy(optiongd,argv[1]);
+                argc--;
+                argv++;
+                continue;
+            }
+            if (c == 'J')
+            {
+                if (argc > 1) strcpy(optionpr,argv[1]);
                 argc--;
                 argv++;
                 continue;
@@ -2459,7 +2477,7 @@ int main (int argc, char *argv[])
                 typein = (int)FreeImage_GetFileType(filein,0);
                 optcolor = COLOR_NONE;
                 if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
-                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout);
+                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr);
                 break;
 
             case FIF_KAP :
@@ -2528,7 +2546,7 @@ int main (int argc, char *argv[])
                         result = 1;
                         break;
                     }
-                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout);
+                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr);
                 break;
         }
         FreeImage_DeInitialise();
@@ -2580,6 +2598,8 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t-e  : fix units to FEET\n" );        
         fprintf(stderr,  "\t-s name : fix sounding datum\n" );
         fprintf(stderr,  "\t-t title : change name of map\n" );
+        fprintf(stderr,  "\t-j projection : change projection of map (Default: MERCATOR)\n" );
+        fprintf(stderr,  "\t-d datum : change geographic datum of map (Default: WGS84)\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
         fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
         fprintf(stderr,  "\t     ALL generate multipage image, use only with GIF or TIF\n" );
