@@ -9,7 +9,7 @@ This repository is a Github clone of the original code created by M'dJ in 2011 a
 ```
 imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-Usage of imgkap Version 1.14 by M'dJ + H.N
+Usage of imgkap Version 1.15 by M'dJ + H.N
 
 Convert kap to img :
   >imgkap mykap.kap myimg.png
@@ -52,6 +52,8 @@ Options :
 	-f  : fix units to FATHOMS
 	-s name : fix sounding datum
 	-t title : change name of map
+    -j projection : change projection of map (Default: MERCATOR)
+    -d datum : change geographic datum of map (Default: WGS84)
 	-p color : color of map
 	   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
 	     ALL generate multipage image, use only with GIF or TIF
