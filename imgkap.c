@@ -52,7 +52,7 @@ typedef union
 
 
 int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr);
-int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int color,char *title,char *fileheader,char *fileout);
+int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int optrc,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
 int findfiletype(char *file);
@@ -1440,13 +1440,14 @@ int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout
 }
 
 
-int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color, char *title, char *fileheader,char *fileout)
+int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int optionrc, int color, char *title, char *fileheader,char *fileout)
 {
     int         widthin,heightin,widthout,heightout;
     int         bits_in,bits_out;
     int         result;
     RGBQUAD     palette[256*8];
     FIBITMAP    *bitmap = 0;
+    FIBITMAP    *tmp_bitmap = 0;
     FILE        *out;
     FILE        *header;
     char        datej[20];
@@ -1458,20 +1459,32 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int color
     /* Read image file */
     if (typein != FIF_KAP)
     {
-        bitmap = FreeImage_Load((FREE_IMAGE_FORMAT)typein,filein,BMP_DEFAULT);
-        if (bitmap == NULL)
+    	tmp_bitmap = FreeImage_Load((FREE_IMAGE_FORMAT)typein,filein,BMP_DEFAULT);
+        if (tmp_bitmap == NULL)
         {
             fprintf(stderr, "ERROR - Could not open or error in image file\"%s\"\n", filein);
             return 2;
         }
-        widthin = FreeImage_GetWidth(bitmap);
-        heightin = FreeImage_GetHeight(bitmap);
+        widthin = FreeImage_GetWidth(tmp_bitmap);
+        heightin = FreeImage_GetHeight(tmp_bitmap);
         if (!widthin || !heightin)
         {
             fprintf(stderr, "ERROR - Invalid image size (width=%d,height=%d)\n", widthin, heightin);
-            FreeImage_Unload(bitmap);
+            FreeImage_Unload(tmp_bitmap);
             return 2;
         }
+
+        if(optionrc == 1)
+        {
+        	/* reduce number of colors to 127  */
+        	bitmap = FreeImage_ColorQuantizeEx(tmp_bitmap, FIQ_NNQUANT, 127, 0, NULL);
+        	FreeImage_Unload(tmp_bitmap);
+        }
+        else
+        {
+        	bitmap = tmp_bitmap;
+        }
+
     }
 
     out = fopen(fileout, "wb");
@@ -2273,6 +2286,7 @@ int main (int argc, char *argv[])
     char    *optionframe;
     int     optionunits = METTERS;
     int     optionkap = NORMAL;
+    int     optionrc = 0;
     int     optionwgs84 = 0;
     int     optcolor;
     char    *optionpal ;
@@ -2310,6 +2324,11 @@ int main (int argc, char *argv[])
             {
                 optionkap = OLDKAP;
                 continue;
+            }
+            if (c == 'C')
+            {
+            	optionrc = 1;
+				continue;
             }
             if (c == 'F')
             {
@@ -2514,7 +2533,7 @@ int main (int argc, char *argv[])
                     optcolor = COLOR_KAP;
                     if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
 
-                    result = imgheadertokap(typein,filein,typein,optionkap,optcolor,optiontitle,filein,fileheader);
+                    result = imgheadertokap(typein,filein,typein,optionkap,optionrc,optcolor,optiontitle,filein,fileheader);
                     break;
                 }
                 result = kaptoimg(typein,filein,typeheader,fileheader,typeout,fileout,optionpal);
@@ -2538,7 +2557,7 @@ int main (int argc, char *argv[])
                     if (fileheader != NULL)
                     {
                         typeheader = findfiletype(fileheader);
-                        result = imgheadertokap(typein,filein,typeheader,optionkap,optcolor,optiontitle,fileheader,fileout);
+                        result = imgheadertokap(typein,filein,typeheader,optionkap,optionrc,optcolor,optiontitle,fileheader,fileout);
                         break;
                     }
                     if (lon1 == HUGE_VAL)
@@ -2594,6 +2613,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... \"3 to 12 pixel points -> PLY\"\n");
         fprintf(stderr,  "\t    : define a up to 12 edges polygon visible from the .kap\n" );
         fprintf(stderr,  "\t-n  : Force compatibility all KAP software, max 127 colors\n" );
+        fprintf(stderr,  "\t-c  : reduce colors of image to 127 colors / for test purposes only\n" );
         fprintf(stderr,  "\t-f  : fix units to FATHOMS\n" );
         fprintf(stderr,  "\t-e  : fix units to FEET\n" );        
         fprintf(stderr,  "\t-s name : fix sounding datum\n" );
