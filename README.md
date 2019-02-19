@@ -1,4 +1,4 @@
-## imgkap 1.14
+## imgkap 1.16
 Tool to manipuate raster nautical charts in KAP format
 
 [![Build Status](https://travis-ci.org/nohal/imgkap.svg?branch=master)](https://travis-ci.org/nohal/imgkap)
@@ -9,7 +9,7 @@ This repository is a Github clone of the original code created by M'dJ in 2011 a
 ```
 imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-Usage of imgkap Version 1.15 by M'dJ + H.N
+Usage of imgkap Version 1.16 by M'dJ + H.N
 
 Convert kap to img :
   >imgkap mykap.kap myimg.png
@@ -17,7 +17,7 @@ Convert kap to img :
   >imgkap mykap.kap mheader.kap myimg.png
     -convert mykap into header myheader (only text file) and myimg.png
 
-Convert img to kap : 
+Convert img to kap :
   >imgkap myimg.png myheaderkap.kap
     -convert myimg.png into myresult.kap using myheader.kap for kap informations
   >imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap
@@ -27,7 +27,7 @@ Convert img to kap :
   >imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f
     -convert myimg.png into myimg.kap using WGS84 positioning and options
 
-Convert kml to kap : 
+Convert kml to kap :
   >imgkap mykml.kml
     -convert GroundOverlay mykml file into kap file using name and dir of image
   >imgkap mykml.kml mykap.kap
@@ -39,7 +39,7 @@ WGS84 positioning :
 	lat to be between -85 and +85 degree
 	lon to be between -180 and +180 degree
 	    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
-	x;y can be used if lat lon is not a left, top and right, bottom point
+	x;y pixel points can be used if lat lon defines not the image edges.
 	    lat0 lon0 x0;y0 must be in the left or right, upper third
 	    lat1 lon1 x1;y1 must be in the right or left, lower third
 Options :
@@ -49,11 +49,14 @@ Options :
 	-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 12 pixel points -> PLY"
 	    : define a up to 12 edges polygon visible from the .kap
 	-n  : Force compatibility all KAP software, max 127 colors
+	-c  : reduce colors of image to 127 colors / for test purposes only
 	-f  : fix units to FATHOMS
+	-e  : fix units to FEET
 	-s name : fix sounding datum
 	-t title : change name of map
-    -j projection : change projection of map (Default: MERCATOR)
-    -d datum : change geographic datum of map (Default: WGS84)
+	-j projection : change projection of map (Default: MERCATOR)
+	-d datum : change geographic datum of map (Default: WGS84)
+	-l scale : Override the calculated scale, 1:<SCALE> (Default: automatically calculated from the image size and geographic extent)
 	-p color : color of map
 	   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
 	     ALL generate multipage image, use only with GIF or TIF

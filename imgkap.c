@@ -7,7 +7,7 @@
  *    imgkap.c - Convert kap a file from/to a image file and kml to kap
  */
 
-#define VERS   "1.15"
+#define VERS   "1.16"
 
 #include <stdint.h>
 #include <math.h>
@@ -51,7 +51,7 @@ typedef union
 #define FIF_KML     1027
 
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr);
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale);
 int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int optrc,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
@@ -1605,7 +1605,7 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int optio
     return result;
 }
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title,int units, char *sd,int optionwgs84, char *optframe, char *fileout, char *gd, char *pr)
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale)
 {
     uint16_t    dpi,widthout,heightout,widthoutr,heightoutr;
     uint32_t    widthin,heightin,widthinr,heightinr;
@@ -1869,8 +1869,13 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     dy = postod(lat0loc,lon0loc,lat1loc,lon0loc);
     fprintf(out,"! Size in milles %.2f x %.2f\r\n",dx,dy) ;
 
-    scale = round(dy*18520000.0*dpi/(heightout*254));
-
+    float realscale = round(dy*18520000.0*dpi/(heightout*254));
+    if (optionscale == 0)
+    {
+        scale = realscale;
+    } else {
+        scale = optionscale;
+    }
     switch(units) {
     case METTERS:
         dx = dx*1852.0/(double)widthout;
@@ -1884,9 +1889,12 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
         dx = dx*1157500./((double)widthout*1143.);
         dy = dy*1157500./((double)heightout*1143.);
     }
-
-    fprintf(out,"! Resolution units %s - %.2fx%.2f -> %.0f at %d dpi\r\n", sunits, dx,dy,scale,dpi) ;
-
+    if (optionscale == 0)
+    {
+        fprintf(out,"! Resolution units %s - %.2fx%.2f -> %.0f at %d dpi\r\n", sunits, dx,dy,scale,dpi) ;
+    } else {
+        fprintf(out,"! Resolution units %s - %.2fx%.2f -> %.0f at %d dpi overriden to  %.0f\r\n", sunits, dx, dy, realscale, dpi, scale) ;
+    }
 
     /* Write KAP header */
     if (color == COLOR_NONE)
@@ -2301,6 +2309,7 @@ int main (int argc, char *argv[])
     int        pixposy = 0;
     char       optiongd[256];
     char       optionpr[256];
+    int        optionscale = 0;
 
     optionsd = (char *)"UNKNOWN" ;
     optionpal = NULL;
@@ -2384,6 +2393,13 @@ int main (int argc, char *argv[])
             if (c == 'J')
             {
                 if (argc > 1) strcpy(optionpr,argv[1]);
+                argc--;
+                argv++;
+                continue;
+            }
+            if (c == 'L')
+            {
+                if (argc > 1) optionscale = strtol(argv[1], NULL, 0);
                 argc--;
                 argv++;
                 continue;
@@ -2496,7 +2512,7 @@ int main (int argc, char *argv[])
                 typein = (int)FreeImage_GetFileType(filein,0);
                 optcolor = COLOR_NONE;
                 if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
-                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr);
+                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale);
                 break;
 
             case FIF_KAP :
@@ -2565,7 +2581,7 @@ int main (int argc, char *argv[])
                         result = 1;
                         break;
                     }
-                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr);
+                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale);
                 break;
         }
         FreeImage_DeInitialise();
@@ -2620,6 +2636,7 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t-t title : change name of map\n" );
         fprintf(stderr,  "\t-j projection : change projection of map (Default: MERCATOR)\n" );
         fprintf(stderr,  "\t-d datum : change geographic datum of map (Default: WGS84)\n" );
+        fprintf(stderr,  "\t-l scale : Override the calculated scale, 1:<SCALE> (Default: automatically calculated from the image size and geographic extent)\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
         fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
         fprintf(stderr,  "\t     ALL generate multipage image, use only with GIF or TIF\n" );

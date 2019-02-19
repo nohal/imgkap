@@ -29,7 +29,7 @@
       <div class="inner clearfix">
         <section id="main-content">
           <h2>
-<a id="imgkap-114" class="anchor" href="#imgkap-114" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>imgkap 1.15</h2>
+<a id="imgkap-114" class="anchor" href="#imgkap-114" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>imgkap 1.16</h2>
 
 <p>Tool to manipuate raster nautical charts in KAP format</p>
 
@@ -42,7 +42,7 @@
 
 <pre><code>imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
-Usage of imgkap Version 1.15 by M'dJ + H.N
+Usage of imgkap Version 1.16 by M'dJ + H.N
 
 Convert kap to img :
   &gt;imgkap mykap.kap myimg.png
@@ -50,7 +50,7 @@ Convert kap to img :
   &gt;imgkap mykap.kap mheader.kap myimg.png
     -convert mykap into header myheader (only text file) and myimg.png
 
-Convert img to kap : 
+Convert img to kap :
   &gt;imgkap myimg.png myheaderkap.kap
     -convert myimg.png into myresult.kap using myheader.kap for kap informations
   &gt;imgkap mykap.png lat0 lon0 lat1 lon1 myresult.kap
@@ -60,47 +60,50 @@ Convert img to kap :
   &gt;imgkap -s 'LOWEST LOW WATER' myimg.png lat0 lon0 lat1 lon2 -f
     -convert myimg.png into myimg.kap using WGS84 positioning and options
 
-Convert kml to kap : 
+Convert kml to kap :
   &gt;imgkap mykml.kml
     -convert GroundOverlay mykml file into kap file using name and dir of image
   &gt;imgkap mykml.kml mykap.kap
     -convert GroundOverlay mykml into mykap file
 
 WGS84 positioning :
-    lat0 lon0 is a left or right,top point
-    lat1 lon1 is a right or left,bottom point cater-cornered to lat0 lon0
-    lat to be between -85 and +85 degree
-    lon to be between -180 and +180 degree
-        different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
-    x;y can be used if lat lon is not a left, top and right, bottom point
-        lat0 lon0 x0;y0 must be in the left or right, upper third
-        lat1 lon1 x1;y1 must be in the right or left, lower third
+	lat0 lon0 is a left or right,top point
+	lat1 lon1 is a right or left,bottom point cater-cornered to lat0 lon0
+	lat to be between -85 and +85 degree
+	lon to be between -180 and +180 degree
+	    different formats are accepted : -1.22  1°10'20.123N  -1d22.123 ...
+	x;y pixel points can be used if lat lon defines not the image edges.
+	    lat0 lon0 x0;y0 must be in the left or right, upper third
+	    lat1 lon1 x1;y1 must be in the right or left, lower third
 Options :
-    -w  : no image size extension to WGS84 because image is already WGS84
-    -r x0f;y0f-x1f;y1f  "2 pixel points -&gt; 4 * PLY"
-        : define a rectangle area in the image visible from the .kap
-    -r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 12 pixel points -&gt; PLY"
-        : define a up to 12 edges polygon visible from the .kap
-    -n  : Force compatibility all KAP software, max 127 colors
-    -f  : fix units to FATHOMS
-    -s name : fix sounding datum
-    -t title : change name of map
-    -j projection : change projection of map (Default: MERCATOR)
-    -d datum : change geographic datum of map (Default: WGS84)
-    -p color : color of map
-       color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
-         ALL generate multipage image, use only with GIF or TIF
-       color (image or Kap to Kap) :  NONE|KAP|MAP|IMG
-         NONE use colors in image file, default
-         KAP only width KAP or header file, use RGB tag in KAP file
-         MAP generate DSK and NGB colors for map scan
-           &lt; 64 colors: Black -&gt; Gray, White -&gt; Black
-         IMG generate DSK and NGB colors for image (photo, satellite...)
+	-w  : no image size extension to WGS84 because image is already WGS84
+	-r x0f;y0f-x1f;y1f  "2 pixel points -&gt; 4 * PLY"
+	    : define a rectangle area in the image visible from the .kap
+	-r x0f;y0f-x1f;y1f-x2f;y2f-x3f;y3f... "3 to 12 pixel points -&gt; PLY"
+	    : define a up to 12 edges polygon visible from the .kap
+	-n  : Force compatibility all KAP software, max 127 colors
+	-c  : reduce colors of image to 127 colors / for test purposes only
+	-f  : fix units to FATHOMS
+	-e  : fix units to FEET
+	-s name : fix sounding datum
+	-t title : change name of map
+	-j projection : change projection of map (Default: MERCATOR)
+	-d datum : change geographic datum of map (Default: WGS84)
+	-l scale : Override the calculated scale, 1:&lt;SCALE&gt; (Default: automatically calculated from the image size and geographic extent)
+	-p color : color of map
+	   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG
+	     ALL generate multipage image, use only with GIF or TIF
+	   color (image or Kap to Kap) :  NONE|KAP|MAP|IMG
+	     NONE use colors in image file, default
+	     KAP only width KAP or header file, use RGB tag in KAP file
+	     MAP generate DSK and NGB colors for map scan
+	       &lt; 64 colors: Black -&gt; Gray, White -&gt; Black
+	     IMG generate DSK and NGB colors for image (photo, satellite...)
 </code></pre>
         </section>
 
         <aside id="sidebar">
-          <a href="https://github.com/nohal/imgkap/releases/download/v1.15/imgkap-1.15-win32.7z" class="button">
+          <a href="https://github.com/nohal/imgkap/releases/download/v1.16/imgkap-1.16-win32.7z" class="button">
             <small>Download</small>
               Windows
           </a><br/><br/>
