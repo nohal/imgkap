@@ -28,6 +28,14 @@
 
 #define VERS   "1.16"
 
+#define _USE_MATH_DEFINES
+#define _CRT_SECURE_NO_WARNINGS
+
+#if defined(WIN32) || defined(WIN64)
+#define strcasecmp _stricmp
+#endif /* Def WIN32 or Def WIN64 */
+
+
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
@@ -351,7 +359,7 @@ static int HistReduceDist(reduce *r, histogram *h, histogram *e, int cote, int l
         if (h->count && !h->num)
         {
 
-            curcote = HistDist((Color32)e->color,(Color32)h->color);
+            curcote = HistDist(e->color,h->color);
 
             if (curcote <= cote)
             {
@@ -360,9 +368,9 @@ static int HistReduceDist(reduce *r, histogram *h, histogram *e, int cote, int l
                     c = h->count;
 
                     r->count += c;
-                    r->red += c * (uint64_t)((Color32)h->color).q.rgbRed ;
-                    r->green +=  c * (uint64_t)((Color32)h->color).q.rgbGreen;
-                    r->blue +=  c * (uint64_t)((Color32)h->color).q.rgbBlue;
+                    r->red += c * (uint64_t)(h->color).q.rgbRed ;
+                    r->green +=  c * (uint64_t)(h->color).q.rgbGreen;
+                    r->blue +=  c * (uint64_t)(h->color).q.rgbBlue;
 
                     h->num = r->nbout;
                     h->count = 0;
@@ -379,7 +387,7 @@ static int HistReduceDist(reduce *r, histogram *h, histogram *e, int cote, int l
         {
             limcote += cote ;
 
-            curcote = HistDist((Color32)e->color,(Color32)h->color);
+            curcote = HistDist(e->color,h->color);
 
             if (curcote <= limcote)
                 h->used = HistReduceDist(r,h->child,e,cote,level-2);
