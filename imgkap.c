@@ -51,7 +51,7 @@ typedef union
 #define FIF_KML     1027
 
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale);
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap,int color,char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale, char* edition, char* updated);
 int imgheadertokap(int typein,char *filein,int typeheader,int optkap,int optrc,int color,char *title,char *fileheader,char *fileout);
 int kaptoimg(int typein,char *filein,int typeheader,char *fileheader,int typeout,char *fileout,char *optionpal);
 
@@ -1605,13 +1605,14 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int optio
     return result;
 }
 
-int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale)
+int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, int pixpos0y, double lat1, double lon1, int pixpos1x, int pixpos1y, int optkap, int color, char *title, int units, char *sd, int optionwgs84, char *optframe, char *fileout, char *gd, char *pr, int optionscale, char* edition, char* updated)
 {
     uint16_t    dpi,widthout,heightout,widthoutr,heightoutr;
     uint32_t    widthin,heightin,widthinr,heightinr;
     double      scale;
     double      lx,ly,dx,dy ;
     char        datej[20];
+    char        editionj[5];
     int         result;
     const char  *sunits;
     FIBITMAP    *bitmap;
@@ -1815,7 +1816,15 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
 
     /* Header comment file outut */
 
+    if (edition != NULL && edition[0] == '\0')
+    {
+        strncpy(editionj, "1", 5);
+    } else {
+        strncpy(editionj, edition, 5);
+    }
+
     /* Read date */
+    if (updated != NULL && updated[0] == '\0')
     {
         time_t      t;
         struct tm   *date;
@@ -1823,6 +1832,8 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
         time(&t) ;
         date = localtime(&t);
         strftime(datej, sizeof(datej), "%d/%m/%Y",date);
+    } else {
+        strncpy(datej, updated, 20);
     }
 
     /* Header comment file outut */
@@ -1902,7 +1913,7 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     else
         fputs("VER/3.0\r\n", out);
 
-    fprintf(out,"CED/SE=1,RE=1,ED=%s\r\n",datej);
+    fprintf(out,"CED/SE=%s,RE=01,ED=%s\r\n",edition,datej);
 
     /* write filename and date*/
     {
@@ -2299,6 +2310,8 @@ int main (int argc, char *argv[])
     int     optcolor;
     char    *optionpal ;
     char    optiontitle[256];
+    char    optionupdated[256];
+    char    optionedition[256];
     double  lat0,lon0,lat1,lon1;
     double  l;
     int        pixpos0x = -1;
@@ -2319,7 +2332,7 @@ int main (int argc, char *argv[])
 
     typein = typeheader = typeout = FIF_UNKNOWN;
     lat0 = lat1 = lon0 = lon1 = HUGE_VAL;
-    *filein = *fileout = *optiontitle = 0;
+    *filein = *fileout = *optiontitle = *optionupdated = *optionedition = 0;
 
     while (--argc)
     {
@@ -2375,10 +2388,23 @@ int main (int argc, char *argv[])
                 argv++;
                 continue;
             }
+            if (c == 'I')
+            {
+                if (argc > 1) strcpy(optionedition,argv[1]);
+                argc--;
+                argv++;
+                continue;
+            }
+            if (c == 'U')
+            {
+                if (argc > 1) strcpy(optionupdated,argv[1]);
+                argc--;
+                argv++;
+                continue;
+            }
             if (c == 'P')
             {
                 if (argc > 1) optionpal = argv[1];
-
                 argc--;
                 argv++;
                 continue;
@@ -2512,7 +2538,7 @@ int main (int argc, char *argv[])
                 typein = (int)FreeImage_GetFileType(filein,0);
                 optcolor = COLOR_NONE;
                 if (optionpal) optcolor = findoptlist(listoptcolor,optionpal);
-                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale);
+                result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale,optionedition,optionupdated);
                 break;
 
             case FIF_KAP :
@@ -2581,7 +2607,7 @@ int main (int argc, char *argv[])
                         result = 1;
                         break;
                     }
-                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale);
+                    result = imgtokap(typein,filein,lat0,lon0,pixpos0x,pixpos0y,lat1,lon1,pixpos1x,pixpos1y,optionkap,optcolor,optiontitle,optionunits,optionsd,optionwgs84,optionframe,fileout,optiongd,optionpr,optionscale,optionedition,optionupdated);
                 break;
         }
         FreeImage_DeInitialise();
@@ -2637,6 +2663,8 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t-j projection : change projection of map (Default: MERCATOR)\n" );
         fprintf(stderr,  "\t-d datum : change geographic datum of map (Default: WGS84)\n" );
         fprintf(stderr,  "\t-l scale : Override the calculated scale, 1:<SCALE> (Default: automatically calculated from the image size and geographic extent)\n" );
+        fprintf(stderr,  "\t-i edition : Source edition of the chart (Default: <empty>)\n" );
+        fprintf(stderr,  "\t-u updated : Date of the last update (Default: <empty>)\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
         fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
         fprintf(stderr,  "\t     ALL generate multipage image, use only with GIF or TIF\n" );
