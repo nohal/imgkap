@@ -2663,8 +2663,8 @@ int main (int argc, char *argv[])
         fprintf(stderr,  "\t-j projection : change projection of map (Default: MERCATOR)\n" );
         fprintf(stderr,  "\t-d datum : change geographic datum of map (Default: WGS84)\n" );
         fprintf(stderr,  "\t-l scale : Override the calculated scale, 1:<SCALE> (Default: automatically calculated from the image size and geographic extent)\n" );
-        fprintf(stderr,  "\t-i edition : Source edition of the chart (Default: <empty>)\n" );
-        fprintf(stderr,  "\t-u updated : Date of the last update (Default: <empty>)\n" );
+        fprintf(stderr,  "\t-i edition : Source edition of the chart (Default: 1)\n" );
+        fprintf(stderr,  "\t-u updated : Date of the last update (Default: current date)\n" );
         fprintf(stderr,  "\t-p color : color of map\n" );
         fprintf(stderr,  "\t   color (Kap to image) : ALL|RGB|DAY|DSK|NGT|NGR|GRY|PRC|PRG\n" );
         fprintf(stderr,  "\t     ALL generate multipage image, use only with GIF or TIF\n" );
