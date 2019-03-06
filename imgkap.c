@@ -1,10 +1,29 @@
 /*
- *  This source is free writen by M'dJ at 17/05/2011 extended by H.N 2016
- *  As the original author is not available, please post patches and report issues at https://github.com/nohal/imgkap
+ *  imgkap.c - Convert kap a file from/to a image file and kml to kap
+ *
+ *  Copyright:
+ *      2011  M'dJ
+ *      2016  H.N
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * As the original author is not available, please post patches and
+ * report issues at https://github.com/nohal/imgkap
+ *
  *  Use open source FreeImage and gnu gcc
  *  Thank to freeimage, libsb and opencpn
  *
- *    imgkap.c - Convert kap a file from/to a image file and kml to kap
  */
 
 #define VERS   "1.16"
