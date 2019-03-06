@@ -1,11 +1,34 @@
-## imgkap 1.16
+# imgkap 1.16
 Tool to manipuate raster nautical charts in KAP format
 
 [![Build Status](https://travis-ci.org/nohal/imgkap.svg?branch=master)](https://travis-ci.org/nohal/imgkap)
 
 This repository is a Github clone of the original code created by M'dJ in 2011 and maintained by Pavel Kalian
 
-### Usage
+## Build
+
+### Linux, macOS
+
+```
+make
+```
+
+### Windows
+
+Use the `win` branch
+
+```
+cl -MT -DWIN32 -I FreeImage/Dist/x32 imgkap.c FreeImage/Dist/x32/FreeImage.lib
+```
+
+or 
+
+```
+cl -MT -DWIN64 -I FreeImage/Dist/x64 imgkap.c FreeImage/Dist/x64/FreeImage.lib
+```
+
+
+## Usage
 ```
 imgkap [option] [inputfile] [lat0 lon0 [x0;y0] lat1 lon1 [x1;y1] | headerfile] [outputfile]
 
