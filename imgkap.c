@@ -1952,8 +1952,9 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
          fprintf(out,"BSB/NA=%.70s\r\n",title);
     }
 
+    float pp = (lat0loc+lat1loc)/2;
     fprintf(out,"    NU=%s,RA=%d,%d,DU=%d\r\n",filenameNU,widthout,heightout,dpi);
-    fprintf(out,"KNP/SC=%0.f,GD=%s,PR=%s,PP=%.2f\r\n", scale, gd, pr,0.0);
+    fprintf(out,"KNP/SC=%0.f,GD=%s,PR=%s,PP=%.2f\r\n", scale, gd, pr, pp);
     fputs("    PI=UNKNOWN,SP=UNKNOWN,SK=0.0,TA=90\r\n", out);
     fprintf(out,"    UN=%s,SD=%s,DX=%.2f,DY=%.2f\r\n", sunits, sd,dx,dy);
 
