@@ -213,7 +213,6 @@ void myfree(void)
 }
 
 /*------------------ Histogram algorithm ------------------*/
-
 typedef struct
 {
     Color32 color;
@@ -229,7 +228,6 @@ typedef struct shistogram
     int16_t used;
     struct shistogram *child ;
 } histogram;
-
 
 #define HistIndex2(p,l) ((((p.q.rgbRed >> l) & 0x03) << 4) | (((p.q.rgbGreen >> l) & 0x03) << 2) |    ((p.q.rgbBlue >> l) & 0x03) )
 #define HistSize(l) (l?sizeof(histogram):sizeof(helem))
@@ -966,7 +964,6 @@ static void read_line(uint8_t *in, uint16_t bits, int width, uint8_t *colors, hi
     }
 }
 
-
 static uint32_t GetHistogram(FIBITMAP *bitmap,uint32_t bits,uint16_t width,uint16_t height,Color32 *pal,histogram *hist)
 {
     uint32_t    i,j;
@@ -1471,7 +1468,6 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int optio
     FILE        *header;
     char        datej[20];
 
-
     memset(palette,0,sizeof(palette));
     widthin = heightin = 0;
 
@@ -1493,16 +1489,39 @@ int imgheadertokap(int typein,char *filein,int typeheader, int optkap, int optio
             return 2;
         }
 
-        if(optionrc == 1)
+      if (optionrc == 1)
+      {
+
+        bits_in = FreeImage_GetBPP(tmp_bitmap);
+
+        /* make bitmap 24, accept only 1 4 8 24 bits */
+        if ((bits_in > 8) && (bits_in != 24))
         {
-        	/* reduce number of colors to 127  */
-        	bitmap = FreeImage_ColorQuantizeEx(tmp_bitmap, FIQ_NNQUANT, 127, 0, NULL);
-        	FreeImage_Unload(tmp_bitmap);
+          FIBITMAP *bitmap24;
+          bitmap24 = FreeImage_ConvertTo24Bits (tmp_bitmap);
+          if (bitmap24 == NULL)
+          {
+            fprintf (stderr, "ERROR - bitmap PPP is incorrect\n");
+            return 2;
+          }
+          FreeImage_Unload (tmp_bitmap);
+          tmp_bitmap = bitmap24;
         }
-        else
+
+        /* reduce number of colors to 127  */
+        bitmap = FreeImage_ColorQuantizeEx (tmp_bitmap, FIQ_NNQUANT, 127, 0,
+                                            NULL);
+
+        if (bitmap == 0)
         {
-        	bitmap = tmp_bitmap;
+          fprintf (stderr, "ERROR - FreeImage_ColorQuantizeEx failed\n");
+          return 2;
         }
+      }
+      else
+      {
+        bitmap = tmp_bitmap;
+      }
 
     }
 
@@ -1644,7 +1663,7 @@ int imgtokap(int typein,char *filein, double lat0, double lon0, int pixpos0x, in
     double      lat1loc = lat1;
     double      lon0loc = lon0;
     double      lon1loc = lon1;
-    double      lon1locr, lon0locr, lat1locr, lat0locr;
+
     uint16_t    pixpos0xr,pixpos1xr,pixpos0yr,pixpos1yr;
     int         numxf = 0;
     int         xf[12];
