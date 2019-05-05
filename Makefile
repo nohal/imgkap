@@ -19,7 +19,3 @@ test: imgkap
 	else \
 	echo "imgkap seems broken."; \
 	fi
-	
-testrc: imgkap
-	./imgkap ./examples/osm/L16-19056-38040-8-8_16.png ./examples/osm/L16-19056-38040-8-8_16.png.kap out.kap -t testchart -c
-	./imgkap ./examples/osm/L16-19056-38040-8-8_16.png ./examples/osm/L16-19056-38040-8-8_16.png.kap out.kap -t testchart
