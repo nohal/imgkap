@@ -6,6 +6,7 @@ function GenerateKap()
 {
 	[ -e out.kap ] && rm out.kap
 
+    echo "test case $TC:"
 	echo "./imgkap $PNGFILE $KAPHEADERFILE out.kap -t testchart $OPTIONS"
 	./imgkap $PNGFILE $KAPHEADERFILE out.kap -t testchart $OPTIONS
 
